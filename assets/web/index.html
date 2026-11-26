@@ -54,6 +54,13 @@ nav.bot button.on{color:var(--p);font-weight:700}
 @media(min-width:760px){.fab{left:calc(50% - 340px)}}
 .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:600;background:var(--pl);color:var(--p);white-space:nowrap}
 .seg.rep{display:flex;gap:4px;flex-wrap:wrap;margin:0}.seg.rep label{flex:1;min-width:64px;text-align:center;padding:9px 4px;border-radius:10px;background:var(--bg,#f0f2f5);cursor:pointer;font-size:14px;border:1px solid transparent}.seg.rep label.on{background:var(--pl,#e6f2ea);color:var(--p);border-color:var(--p);font-weight:700}
+.cal{padding:10px}.calhd b{font-size:17px}.ib2{border:0;background:var(--pl);color:var(--p);width:38px;height:38px;border-radius:50%;font-size:22px;cursor:pointer}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cgrid.wk{margin:8px 0 4px}.cgrid.wk div{text-align:center;font-size:11.5px;color:var(--mu,#667)}
+.cd{position:relative;border:0;background:transparent;border-radius:10px;padding:5px 1px 4px;min-height:54px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font:inherit;color:inherit}
+.cd.empty{cursor:default}.cd .dn{font-size:15px;font-weight:600;width:28px;height:28px;line-height:28px;border-radius:50%;text-align:center}
+.cd.today .dn{background:var(--bad,#e53935);color:#fff}.cd.sel{background:var(--pl,#e6f2ea)}.cd.mine{box-shadow:inset 0 0 0 1.5px var(--a)}
+.cd .gb{font-size:9.5px;color:#fff;border-radius:6px;padding:1px 4px;white-space:nowrap}.cd .tdot{position:absolute;top:4px;left:5px;width:6px;height:6px;border-radius:50%;background:var(--a)}
+.lg{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:4px;vertical-align:middle}
 .tag.urgent{background:var(--badl);color:var(--bad)} .tag.directive{background:var(--al);color:var(--warn)}
 .tag.circular{background:#ede7f6;color:#5e35b1} .tag.done{background:var(--okl);color:var(--ok)}
 .tag.pend{background:#fff4d6;color:#8a6100} .tag.off{background:#eee;color:#777}
@@ -1143,7 +1150,7 @@ VIEWS.home = () => {
       <div style="margin-top:12px" class="mu sm">الوجبة المناوبة الآن</div>
       <div class="b" style="font-size:20px">${gName(dg)}</div>
       <div class="sm" style="opacity:.9">${groupMembers(dg).map(u => esc(u.name)).join('، ') || 'لا يوجد أعضاء'}</div>
-      <div class="duty-strip">${strip}</div>${mine}
+      <div class="duty-strip" data-act="go" data-v="roster" style="cursor:pointer">${strip}</div>${mine}
     </div>
     ${S.installEvt ? `<button class="btn amb full" style="margin-bottom:12px" data-act="install">📲 تثبيت التطبيق على الهاتف</button>` : ''}
     ${isMgr(me) ? deputyCard() : `<div class="card">
@@ -1461,7 +1468,7 @@ VIEWS.more = () => {
   if (canHR(me)) items.push(['docs', '🗄️', 'أوليات الموظفين', 'الوصول لوثائق جميع الموظفين', {}]);
   if (canReports(me)) items.push(['reports', '📊', 'المواقف والبريد الصادر', inSec(me, 'positions') ? 'رفع الموقف اليومي والبريد الصادر للمدير' : 'المواقف اليومية المرفوعة', {}]);
   if (canLoc(me)) items.push(['map', '📍', 'مواقع الموظفين والحضور', 'الموقع المباشر لمن هم في الدوام', {}]);
-  items.push(['roster', '🗓️', 'جدول المناوبات', 'دورة 24 ساعة عمل / 72 ساعة استراحة', {}]);
+  items.push(['roster', '🗓️', 'التقويم والمناوبات', 'تقويم شهري بالوجبات والمهام', {}]);
   if (isMgr(me) || canHR(me)) items.push(['users', '👤', 'الحسابات والأقسام', isMgr(me) ? 'إضافة وغلق الحسابات وتغيير كلمات المرور' : 'عرض الموظفين', {}]);
   if (isMgr(me)) items.push(['settings', '⚙️', 'الإعدادات', 'المناوبة، أوقات الدوام، وكيل المدير، الأقسام', {}]);
   items.push(['profile', '🔑', canSign(me) ? 'حسابي وتوقيعي' : 'حسابي', canSign(me) ? 'كلمة المرور والتوقيع الإلكتروني' : 'تغيير كلمة المرور', {}]);
@@ -1548,12 +1555,42 @@ VIEWS.map = () => {
     }};
 };
 
+const GCOL = ['', '#0c8a43', '#1e6fd9', '#e08a00', '#8e44ad'];
+const MONTHS = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
+const dutyOn = ds => { const d = new Date(ds + 'T12:00:00'); d.setHours(+(S.settings.shiftHour ?? 8) + 1); return dutyGroup(d); };
 VIEWS.roster = () => {
-  const day = dutyDay(); const hr = +(S.settings.shiftHour ?? 8);
-  const rows = [...Array(16).keys()].map(i => { const d = new Date(new Date(day + 'T12:00:00').getTime() + i * 864e5); const dd = new Date(d); dd.setHours(hr + 1); return {date: ymd(d), g: dutyGroup(dd)}; });
-  return {title: 'جدول المناوبات', sub: `التبديل يومياً الساعة ${hr}:00`, back: true,
-    html: `<div class="card"><table class="t"><tr><th>اليوم</th><th>الوجبة</th><th>الأعضاء</th></tr>${rows.map((r, i) => `<tr style="${i === 0 ? 'background:var(--al)' : ''}"><td>${fmtDate(r.date)}</td><td><b>${GN[r.g]}</b></td><td class="sm">${groupMembers(r.g).map(u => esc(u.name)).join('، ')}</td></tr>`).join('')}</table></div>
-    ${GROUPS.map(g => `<div class="card"><h3>${gName(g)}</h3>${groupMembers(g).map(u => `<div class="sm">• ${esc(u.name)}${u.head ? ' <span class="tag">مسؤول</span>' : ''}</div>`).join('') || '<div class="mu sm">لا أعضاء</div>'}</div>`).join('')}`};
+  const me = S.me; const today = dutyDay(); const hr = +(S.settings.shiftHour ?? 8);
+  const sel = S.params.sel || today; const ym = S.params.ym || sel.slice(0, 7);
+  const [y, mo] = ym.split('-').map(Number);
+  const first = new Date(y, mo - 1, 1, 12); const days = new Date(y, mo, 0).getDate();
+  const lead = (first.getDay() + 1) % 7; // الأسبوع يبدأ السبت
+  const wk = ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'];
+  const myG = me.type === 'shift' ? +me.group : 0;
+  const cells = [];
+  for (let i = 0; i < lead; i++) cells.push('<div class="cd empty"></div>');
+  for (let d = 1; d <= days; d++) {
+    const ds = `${y}-${pad(mo)}-${pad(d)}`; const g = dutyOn(ds);
+    const nt = S.tasks.filter(t => t.approved && (isRep(t) ? occursOn(t, ds) : t.date === ds) && (taskInGroup(t, g) || tUsers(t).includes(me.id))).length;
+    cells.push(`<button class="cd ${ds === today ? 'today' : ''} ${ds === sel ? 'sel' : ''} ${myG && g === myG ? 'mine' : ''}" data-act="calSel" data-d="${ds}"><span class="dn">${d}</span><span class="gb" style="background:${GCOL[g]}">${GN[g]}</span>${nt ? '<i class="tdot"></i>' : ''}</button>`);
+  }
+  const sg = dutyOn(sel); const sd = new Date(sel + 'T12:00:00'); const nx = new Date(sd.getTime() + 864e5);
+  const tasks = S.tasks.filter(t => t.approved && (isRep(t) ? occursOn(t, sel) : t.date === sel) && (taskInGroup(t, sg) || tUsers(t).includes(me.id)));
+  const counts = GROUPS.map(g => { let n = 0; for (let d = 1; d <= days; d++) if (dutyOn(`${y}-${pad(mo)}-${pad(d)}`) === g) n++; return n; });
+  return {title: 'التقويم والمناوبات', sub: `تبديل الوجبة الساعة ${pad(hr)}:00`, back: true,
+    html: `<div class="card cal">
+      <div class="row between calhd"><button class="ib2" data-act="calNav" data-n="-1">›</button><b>${MONTHS[mo - 1]} ${y}</b><button class="ib2" data-act="calNav" data-n="1">‹</button></div>
+      <div class="cgrid wk">${wk.map(w => `<div>${w}</div>`).join('')}</div>
+      <div class="cgrid">${cells.join('')}</div>
+      <div class="row between" style="margin-top:8px"><div class="row wrap" style="gap:8px">${GROUPS.map(g => `<span class="sm"><i class="lg" style="background:${GCOL[g]}"></i>${GN[g]} (${counts[g - 1]})</span>`).join('')}</div>${sel !== today ? `<button class="btn gh sm" data-act="calSel" data-d="${today}">اليوم</button>` : ''}</div>
+    </div>
+    <div class="card" style="border-inline-start:5px solid ${GCOL[sg]}">
+      <div class="row between"><div><b style="font-size:16px">${fmtDate(sel)}</b>${sel === today ? ' <span class="tag done">اليوم</span>' : ''}</div><span class="tag" style="background:${GCOL[sg]};color:#fff">${gName(sg)}</span></div>
+      <div class="mu sm" style="margin-top:4px">المناوبة من ${pad(hr)}:00 ${DAYS[sd.getDay()]} إلى ${pad(hr)}:00 ${DAYS[nx.getDay()]}${myG ? (sg === myG ? ' • <b style="color:var(--p)">وجبتك مناوبة</b>' : '') : ''}</div>
+      <div class="sec-title" style="margin:10px 0 4px">أعضاء الوجبة</div>
+      ${groupMembers(sg).map(u => `<div class="it" data-act="chatInfo" data-id="${esc(dmId(me.id, u.id))}" style="display:flex;align-items:center;gap:10px;padding:6px 0"><div class="av" style="width:34px;height:34px;font-size:13px">${esc(initials(u.name))}</div><div class="grow"><b class="sm">${esc(u.name)}</b>${u.head ? ' <span class="tag">مسؤول</span>' : ''}</div></div>`).join('') || '<div class="mu sm">لا أعضاء</div>'}
+      <div class="sec-title" style="margin:10px 0 4px">مهام وتوجيهات هذا اليوم (${tasks.length})</div>
+      ${tasks.map(taskCard).join('') || '<div class="mu sm">لا توجد مهام مجدولة</div>'}
+    </div>`};
 };
 
 VIEWS.users = () => {
@@ -1662,6 +1699,8 @@ A.seedDemo = async () => {
   ls.set('dawam_seeded', true); toast('تم إنشاء بيانات تجريبية — ادخل بـ manager / 1234'); render();
 };
 
+A.calSel = d => { S.params = {...S.params, sel: d.d, ym: d.d.slice(0, 7)}; render(); };
+A.calNav = d => { const [y, m] = (S.params.ym || (S.params.sel || dutyDay()).slice(0, 7)).split('-').map(Number); const n = new Date(y, m - 1 + +d.n, 1); S.params = {...S.params, ym: `${n.getFullYear()}-${pad(n.getMonth() + 1)}`}; render(); };
 A.gtab = d => { S.params = {...S.params, t: d.t}; S.fresh = true; render(); };
 A.pfilter = d => { S.params = {...S.params, pf: d.f}; S.fresh = true; render(); };
 A.newPost = d => {
