@@ -11,7 +11,14 @@
 //   appId: "1:1234567890:web:abcdef"
 // };
 
-window.FIREBASE_CONFIG = null;
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDVhYm7sUziV3gzOtefcCWzG8eDaVG-qo8",
+  authDomain: "ibraq-c7f07.firebaseapp.com",
+  projectId: "ibraq-c7f07",
+  storageBucket: "ibraq-c7f07.firebasestorage.app",
+  messagingSenderId: "694382635666",
+  appId: "1:694382635666:web:ac475d6636c3f27f7f144b"
+};
 
 // اسم الدائرة الذي يظهر أعلى التطبيق
 window.ORG_NAME = "دائرتي";
