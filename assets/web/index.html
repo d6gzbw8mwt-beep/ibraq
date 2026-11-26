@@ -223,6 +223,29 @@ input.in,select.in,textarea.in{border-radius:12px;padding:11px 13px;background:#
 .vn .vav{width:40px;height:40px;border-radius:50%;background:var(--pl);color:var(--p);display:grid;place-items:center;flex:none}
 .vn .vav svg.ic{width:22px;height:22px}
 .msg .att img{border-radius:8px;margin:0 -5px 4px;max-width:calc(100% + 10px)}
+.sgbtn{display:flex;align-items:center;gap:6px;margin:6px 0 2px;border:0;background:var(--pl);color:var(--p);font-weight:700;font-size:13.5px;border-radius:18px;padding:7px 12px;cursor:pointer}
+.sgbtn svg.ic{width:18px;height:18px}
+.fwd{display:flex;align-items:center;gap:4px;font-size:12.5px;color:#667781;font-style:italic;margin-bottom:3px}
+.fwd svg.ic{width:15px;height:15px}
+.dir{background:rgba(226,167,46,.18);border-inline-start:3px solid var(--a);border-radius:6px;padding:5px 8px;margin:2px 0 6px;font-size:14px;white-space:pre-wrap}
+.msg.sel{filter:brightness(.9)}
+.msheet{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.msheet button{display:flex;align-items:center;gap:14px;border:0;background:none;padding:13px 8px;border-radius:12px;font-size:16px;cursor:pointer;text-align:start}
+.msheet button:active{background:#f0f2f5}
+.msheet button svg.ic{color:var(--p2)}
+.tpick{max-height:46vh;overflow-y:auto;margin:8px -4px 0;padding:0 4px}
+.tpick label{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid var(--bd);cursor:pointer}
+.tpick input{width:20px;height:20px;accent-color:#1a9e4b}
+.msg{-webkit-user-select:text;user-select:text}
+.viewer{position:fixed;inset:0;z-index:80;background:#0b141a;display:flex;flex-direction:column;animation:fadein .15s}
+@keyframes fadein{from{opacity:0}}
+.vbar{display:flex;align-items:center;gap:6px;padding:calc(6px + env(safe-area-inset-top)) 8px 6px;background:rgba(11,20,26,.92);color:#fff;flex:none}
+.vbar .vt{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vbar .ib{color:#fff}
+.vbody{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;-webkit-overflow-scrolling:touch}
+.vbody>img{max-width:100%;max-height:100%;margin:auto;object-fit:contain}
+.vpdf{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0 calc(16px + env(safe-area-inset-bottom))}
+.vpdf canvas{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.4);max-width:100%}
 </style>
 </head>
 <body>
@@ -240,7 +263,7 @@ const APP = 'الإبراق الإلكتروني';
 const SECTIONS = {admin:'الإدارة', followup:'المتابعة', incoming:'الوارد', positions:'المواقف'};
 const GROUPS = [1,2,3,4];
 const GN = ['','الأولى','الثانية','الثالثة','الرابعة'];
-const gName = g => +g === 0 ? 'كل الوجبات' : 'الوجبة ' + GN[g];
+const gName = g => +g === 0 ? 'كل الوجبات' : (((typeof S !== 'undefined' && S.settings && S.settings.groupNames) || {})[g] || 'الوجبة ' + GN[g]);
 const KINDS = {task:'مهمة يومية', urgent:'مهمة عاجلة', directive:'توجيه', circular:'تعميم', comment:'تعليق / ملاحظة'};
 const REQ_TYPES = ['إجازة اعتيادية','إجازة مرضية','إجازة زمنية','تبديل مناوبة','طلب كتاب رسمي','أخرى'];
 const MAX_FILE = 15 * 1024 * 1024;
@@ -268,6 +291,8 @@ const ICP = {
   play: 'M8 5v14l11-7z', pause: 'M6 5h4v14H6zm8 0h4v14h-4z',
   trash: 'M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z',
   pen: 'M3 17.3V21h3.8l11-11-3.8-3.8zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.8 3.8z',
+  fwd: 'M14 8V4l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z',
+  copy: 'M16 1H4a2 2 0 0 0-2 2v14h2V3h12zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11z',
   person: 'M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12zm0 2c-3 0-9 1.5-9 4.5V21h18v-2.5c0-3-6-4.5-9-4.5z'
 };
 const IC = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICP[n] || ''}"/></svg>`;
@@ -456,23 +481,28 @@ const isDeputy = u => !!u && !!S.settings.deputy && !!S.settings.deputy.active &
 const actingMgr = u => isMgr(u) || isDeputy(u);
 const actor = () => S.me.name + (isDeputy(S.me) && !isMgr(S.me) ? ' (وكيل المدير)' : '');
 const inSec = (u, s) => !!u && u.type === 'morning' && u.section === s;
-const canAssign = u => isMgr(u) || inSec(u, 'admin') || inSec(u, 'followup');
-const canApprove = u => actingMgr(u) || inSec(u, 'followup');
-const canHR = u => isMgr(u) || inSec(u, 'admin');
-const canLoc = u => actingMgr(u) || inSec(u, 'followup') || inSec(u, 'admin');
-const canReports = u => actingMgr(u) || inSec(u, 'positions') || inSec(u, 'followup');
-const groupAccess = (u, g) => actingMgr(u) || inSec(u, 'admin') || inSec(u, 'followup') || (u.type === 'shift' && +u.group === +g);
-const kindsFor = u => actingMgr(u) || inSec(u, 'followup') ? ['task', 'urgent', 'directive', 'circular', 'comment'] : ['task', 'directive', 'circular'];
+const isDirector = u => !!u && u.role === 'director';
+/* صلاحية مخصصة لكل حساب يحددها الأدمن (مسموح / ممنوع)، وإلا تُطبَّق الصلاحية الافتراضية حسب القسم */
+const perm = (u, k, def) => { if (!u) return false; if (isDirector(u)) return false; const o = u.perms && u.perms[k]; return o === 'on' ? true : o === 'off' ? false : !!def; };
+const PERMS = {assign: 'إسناد المهام للوجبات', approve: 'تثبيت المهام والمرفوعات واتخاذ الإجراء', allGroups: 'الاطلاع على كل الوجبات ومحادثاتها', hr: 'أوليات وحسابات الموظفين', loc: 'مواقع الموظفين والحضور', reports: 'المواقف والبريد الصادر', urgent: 'إرسال العاجل والتوجيهات'};
+const canAssign = u => perm(u, 'assign', isMgr(u) || inSec(u, 'admin') || inSec(u, 'followup'));
+const canApprove = u => perm(u, 'approve', actingMgr(u) || inSec(u, 'followup'));
+const canHR = u => perm(u, 'hr', isMgr(u) || inSec(u, 'admin'));
+const canLoc = u => perm(u, 'loc', actingMgr(u) || inSec(u, 'followup') || inSec(u, 'admin'));
+const canReports = u => perm(u, 'reports', actingMgr(u) || inSec(u, 'positions') || inSec(u, 'followup'));
+const groupAccess = (u, g) => perm(u, 'allGroups', actingMgr(u) || inSec(u, 'admin') || inSec(u, 'followup')) || (!!u && u.type === 'shift' && +u.group === +g);
+const kindsFor = u => perm(u, 'urgent', actingMgr(u) || inSec(u, 'followup')) ? ['task', 'urgent', 'directive', 'circular', 'comment'] : ['task', 'directive', 'circular'];
 const roleLabel = u => {
   if (!u) return '';
   const parts = [];
+  if (isDirector(u)) return u.job || 'مدير قسم الحركة';
   if (isMgr(u)) parts.push('المدير'); else if (isDeputy(u)) parts.push('وكيل المدير');
   if (u.type === 'morning' && (u.section || !isMgr(u))) parts.push(u.section ? 'قسم ' + (sectionName(u.section)) : 'موظف صباحي');
   if (u.type === 'shift') parts.push(gName(u.group));
   if (u.head) parts.push(u.type === 'shift' ? 'مسؤول الوجبة' : 'مسؤول القسم');
   return parts.join(' • ');
 };
-const allSections = () => Object.assign({}, SECTIONS, S.settings.extraSections || {});
+const allSections = () => Object.assign({}, SECTIONS, S.settings.sectionNames || {}, S.settings.extraSections || {});
 const sectionName = k => allSections()[k] || k;
 function canDecide(me, r) {
   if (r.by === me.id || r.status !== 'pending') return false;
@@ -563,7 +593,7 @@ function hydrate(root = document) {
   $$('[data-fid]:not([data-h])', root).forEach(el => {
     el.setAttribute('data-h', '1'); const k = el.dataset.k; if (k === 'file') return;
     if (k === 'audio') wireVN(el);
-    fileURL(el.dataset.fid).then(f => { el.src = f.url; if (k === 'image') el.onclick = () => viewImage(f.url); })
+    fileURL(el.dataset.fid).then(f => { el.src = f.url; if (k === 'image') el.onclick = () => viewImage(f.url, f.name, el.dataset.fid); })
       .catch(() => { if (k === 'image') el.alt = 'تعذر تحميل الصورة'; });
   });
 }
@@ -577,11 +607,48 @@ function wireVN(au) {
   au.addEventListener('ended', () => { au.currentTime = 0; upd(); });
   au.addEventListener('loadedmetadata', () => { if (au.duration === Infinity) { au.currentTime = 1e7; const f = () => { au.removeEventListener('timeupdate', f); au.currentTime = 0; upd(); }; au.addEventListener('timeupdate', f); } });
 }
-function viewImage(url) {
-  const d = document.createElement('div'); d.className = 'imgview'; const im = document.createElement('img'); im.src = url; d.appendChild(im);
-  d.onclick = () => d.remove(); document.body.appendChild(d);
+/* عارض الصور والملفات داخل التطبيق مع زر إغلاق */
+function closeViewer() { const v = $('#viewer'); if (!v) return false; v.remove(); document.body.style.overflow = ''; return true; }
+function openViewer(title, inner, fileId) {
+  closeViewer();
+  const d = document.createElement('div'); d.id = 'viewer'; d.className = 'viewer';
+  d.innerHTML = `<div class="vbar"><button class="ib vclose" aria-label="إغلاق">${IC('back')}</button><div class="vt">${esc(title || '')}</div>${fileId ? `<button class="ib vext" title="فتح بتطبيق آخر / حفظ"><svg class="ic" viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2zM14 3v2h3.6l-9.8 9.8 1.4 1.4L19 6.4V10h2V3z"/></svg></button>` : ''}<button class="ib vclose" aria-label="إغلاق"><svg class="ic" viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg></button></div><div class="vbody">${inner}</div>`;
+  document.body.appendChild(d); document.body.style.overflow = 'hidden';
+  $$('.vclose', d).forEach(b => b.onclick = closeViewer);
+  const ext = $('.vext', d); if (ext) ext.onclick = () => openFileExternal(fileId);
+  try { history.pushState({v: 1}, ''); } catch (e) {}
+  return d;
+}
+function viewImage(url, title, fileId) { openViewer(title || 'صورة', `<img src="${url}" alt="">`, fileId); }
+async function viewPdf(f, fileId) {
+  const v = openViewer(f.name || 'ملف PDF', `<div class="vpdf"><div class="spin" style="margin:40px auto"></div></div>`, fileId);
+  try {
+    if (!window.pdfjsLib) { await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'); pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
+    const doc = await pdfjsLib.getDocument({data: new Uint8Array(await (await fetch(f.url)).arrayBuffer())}).promise;
+    const box = $('.vpdf', v); if (!box) return; box.innerHTML = '';
+    const W = Math.min(window.innerWidth, 900) - 16, dpr = Math.min(3, window.devicePixelRatio || 1);
+    for (let i = 1; i <= doc.numPages; i++) {
+      if (!document.body.contains(box)) return;
+      const pg = await doc.getPage(i); const vp0 = pg.getViewport({scale: 1}); const vp = pg.getViewport({scale: W / vp0.width * dpr});
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; c.style.width = W + 'px'; box.appendChild(c);
+      await pg.render({canvasContext: c.getContext('2d'), viewport: vp}).promise;
+    }
+  } catch (e) { const box = $('.vpdf', v); if (box) box.innerHTML = `<div class="empty" style="color:#fff">تعذر عرض الملف هنا.<br><br><button class="btn sec" id="vfb">فتح بتطبيق آخر</button></div>`; const b = $('#vfb'); if (b) b.onclick = () => openFileExternal(fileId); }
+}
+async function openFileExternal(id) {
+  try { toast('جارِ فتح الملف…', {ms: 1500}); const f = await fileURL(id);
+    if (Native.ok) { const b = await (await fetch(f.url)).blob(); await Native.call('openFile', f.name || 'file', f.type || '', await blobToB64(b)); return; }
+    const a = document.createElement('a'); a.href = f.url; a.download = f.name || 'file'; document.body.appendChild(a); a.click(); a.remove(); }
+  catch (e) { toast(e.message); }
 }
 async function openFile(id) {
+  try { const f = await fileURL(id);
+    if (/^image\//.test(f.type || '')) return viewImage(f.url, f.name, id);
+    if (/pdf/.test(f.type || '') || /\.pdf$/i.test(f.name || '')) return viewPdf(f, id);
+  } catch (e) { return toast(e.message); }
+  return openFileExternal(id);
+}
+async function openFileOld(id) {
   try { toast('جارِ فتح الملف…', {ms: 1500}); const f = await fileURL(id);
     if (Native.ok) { const b = await (await fetch(f.url)).blob(); await Native.call('openFile', f.name || 'file', f.type || '', await blobToB64(b)); return; } const a = document.createElement('a'); a.href = f.url; a.download = f.name || 'file'; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove(); }
   catch (e) { toast(e.message); }
@@ -594,6 +661,7 @@ const Native = {
 };
 window.addEventListener('flutterInAppWebViewPlatformReady', () => { Native.ok = true; if (S.me) { Geo.stop(); autoDuty(); } });
 window.__nativeBack = () => {
+  if (closeViewer()) return true;
   if ($('#modal').innerHTML) { closeModal(); return true; }
   if (!S.me) return false;
   if (navStack.length) { goBack(); return true; }
@@ -778,8 +846,9 @@ async function doSign(d, o) {
   const name = (d.name || 'file').replace(/\.[^.]+$/, '') + '-موقّع.' + (pdf ? 'pdf' : 'jpg');
   const file = new File([blob], name, {type: blob.type});
   if (file.size > MAX_FILE) throw new Error('الملف الموقّع أكبر من 15 ميغابايت');
-  const att = {fileId: await B.putFile(file, name), fileName: name, fileType: file.type, fileSize: file.size};
   const [k, id] = [d.ctx.slice(0, d.ctx.indexOf(':')), d.ctx.slice(d.ctx.indexOf(':') + 1)];
+  if (k === 'chat') { await sendTo(d.ctx, o.text || ('✍️ تم التوقيع على ' + (d.name || 'الملف')), file); Snd.play('send'); toast('تم التوقيع وإرساله ✓'); return; }
+  const att = {fileId: await B.putFile(file, name), fileName: name, fileType: file.type, fileSize: file.size};
   if (k === 'post') {
     const p = S.posts.find(x => x.id === id);
     await addPostAction(id, {type: 'sign', text: o.text || ('وقّع على ' + d.name), ...att}, {seenBy: [...new Set([...(p.seenBy || []), S.me.id])], status: p.status === 'new' ? 'seen' : p.status});
@@ -853,7 +922,7 @@ function goBack() {
   if ($('#modal').innerHTML) { closeModal(); return; }
   const p = navStack.pop() || {view: 'home', params: {}}; S.view = p.view; S.params = p.params || {}; S.fresh = true; render();
 }
-window.addEventListener('popstate', () => { if (!S.me) return; goBack(); if (navStack.length || $('#modal').innerHTML) { try { history.pushState({}, ''); } catch (e) {} } });
+window.addEventListener('popstate', () => { if (closeViewer()) return; if (!S.me) return; goBack(); if (navStack.length || $('#modal').innerHTML) { try { history.pushState({}, ''); } catch (e) {} } });
 function openLink(link) {
   if (!link) return; const [k, id] = [link.slice(0, link.indexOf(':')), link.slice(link.indexOf(':') + 1)];
   if (k === 'chat') go('chat', {id}); else if (k === 'task') go('task', {id}); else if (k === 'post') go('post', {id}); else if (k === 'view') go(id);
@@ -904,6 +973,7 @@ function doRender() {
     const ae = document.activeElement; if (ae && ae.id && keep[ae.id] !== undefined) { focusId = ae.id; try { selS = ae.selectionStart; } catch (e) {} }
     const m = $('#msgs'); if (m) { scrollMsgs = m.scrollTop; nearBottom = m.scrollHeight - m.scrollTop - m.clientHeight < 120; }
   }
+  if (isDirector(S.me) && !['chats', 'chat', 'more', 'profile'].includes(S.view)) { S.view = 'chats'; S.params = {}; S.fresh = true; }
   const wasFresh = S.fresh; S.fresh = false;
   const V = VIEWS[S.view] || VIEWS.home;
   const v = V();
@@ -921,7 +991,10 @@ function doRender() {
   if (v.after) v.after();
 }
 function navHTML() {
-  const me = S.me; const tabs = [['home', IC('home'), 'الرئيسية']];
+  const me = S.me;
+  if (isDirector(me)) { const cur = S.view === 'chat' ? 'chats' : ['profile', 'docs'].includes(S.view) ? 'more' : S.view; const un = unreadCount();
+    return `<nav class="bot"><div class="in">${[['chats', IC('chat'), 'الرسائل'], ['more', IC('menu'), 'المزيد']].map(([k, i, l]) => `<button class="${cur === k ? 'on' : ''}" data-act="tab" data-v="${k}"><span class="i">${i}</span>${l}${k === 'chats' && un ? `<span class="dot">${un}</span>` : ''}</button>`).join('')}</div></nav>`; }
+  const tabs = [['home', IC('home'), 'الرئيسية']];
   if (me.type === 'shift') tabs.push(['mygroup', IC('groups'), 'وجبتي']); else tabs.push(['groups', IC('groups'), 'الوجبات']);
   tabs.push(['chats', IC('chat'), 'الرسائل'], ['requests', IC('req'), 'الطلبات'], ['more', IC('menu'), 'المزيد']);
   const rootOf = {group: me.type === 'shift' ? 'mygroup' : 'groups', task: me.type === 'shift' ? 'mygroup' : 'groups', post: me.type === 'shift' ? 'mygroup' : 'groups', chat: 'chats', docs: 'more', reports: 'more', map: 'more', users: 'more', settings: 'more', profile: 'more', roster: 'more'};
@@ -1232,7 +1305,10 @@ VIEWS.chat = () => {
     const d = ymd(new Date(m.ts)); const sep = d !== lastDay ? `<div class="daysep"><span>${fmtDate(d)}</span></div>` : ''; lastDay = d;
     if (m.type === 'sys') return sep + `<div class="msg sys ${m.urgent ? 'urgent' : ''}" ${m.link ? `data-act="link" data-link="${esc(m.link)}" style="cursor:pointer"` : ''}>${esc(m.text)}<div class="tm" style="text-align:center">${esc(uname(m.by))} • ${fmtTime(m.ts)}</div></div>`;
     const mine = m.by === me.id;
-    return sep + `<div class="msg ${mine ? 'me' : 'ot'}" data-key="${esc(m.id || m.ts)}">${!mine && isG ? `<div class="who">${esc(uname(m.by))}</div>` : ''}${attHTML(m)}${m.text ? esc(m.text) : ''}<span class="tm">${fmtTime(m.ts)}</span></div>`;
+    const sg = !mine && m.fileId && signable(m) ? `<button class="sgbtn" data-act="signFile" data-ctx="chat:${esc(id)}" data-fid="${esc(m.fileId)}" data-name="${esc(m.fileName)}" data-type="${esc(m.fileType)}">${IC('pen')} وقّع وأرجِعه</button>` : '';
+    const fw = m.fwd ? `<div class="fwd">${IC('fwd')} ${m.directive ? 'توجيه' : 'محوّلة'}${m.fwdFrom ? ' • من ' + esc(m.fwdFrom) : ''}</div>` : '';
+    const dv = m.directive ? `<div class="dir"><b>📌 التوجيه:</b> ${esc(m.directive)}</div>` : '';
+    return sep + `<div class="msg ${mine ? 'me' : 'ot'}" data-key="${esc(m.id || m.ts)}" data-mid="${esc(m.id || '')}" data-chat="${esc(id)}">${!mine && isG ? `<div class="who">${esc(uname(m.by))}</div>` : ''}${fw}${dv}${attHTML(m)}${m.text ? esc(m.text) : ''}${sg}<span class="tm">${fmtTime(m.ts)}</span></div>`;
   }).join('');
   const sub = isG ? (groupMembers(g).length + ' أعضاء + المدير والإدارة والمتابعة') : roleLabel(user(other));
   return {
@@ -1281,6 +1357,9 @@ VIEWS.requests = () => {
 
 VIEWS.more = () => {
   const me = S.me; const items = [];
+  if (isDirector(me)) return {title: 'المزيد', sub: me.name, html: `<div class="card list" style="padding:4px 12px"><div class="it" data-act="go" data-v="profile"><div class="av g" style="background:var(--pl);color:var(--p)">${IC('pen')}</div><div class="grow"><b>حسابي وتوقيعي</b><div class="mu sm">كلمة المرور والتوقيع الإلكتروني</div></div></div></div>
+    <button class="btn gh full" data-act="enableNotif">🔔 تفعيل تنبيهات الهاتف</button>
+    <button class="btn bad full" style="margin-top:10px" data-act="logout">تسجيل الخروج</button>`};
   items.push(['docs', '📁', 'ملفي ووثائقي', 'رفع المستمسكات والوثائق المطلوبة', {u: me.id}]);
   if (canHR(me)) items.push(['docs', '🗄️', 'أوليات الموظفين', 'الوصول لوثائق جميع الموظفين', {}]);
   if (canReports(me)) items.push(['reports', '📊', 'المواقف والبريد الصادر', inSec(me, 'positions') ? 'رفع الموقف اليومي والبريد الصادر للمدير' : 'المواقف اليومية المرفوعة', {}]);
@@ -1406,6 +1485,10 @@ VIEWS.settings = () => {
       <p class="mu sm">المناوبون يُسجَّل دوامهم تلقائياً مع مناوبة وجبتهم (24 ساعة من ساعة التبديل).</p>
       <button class="btn full" style="margin-top:10px" data-act="saveHours">حفظ أوقات الدوام</button></div>
     ${deputyCard()}
+    <div class="card"><h3>الهيكلية: أسماء الوجبات والأقسام</h3><p class="mu sm">غيّر الأسماء كما تظهر في التطبيق. اترك الحقل فارغاً للاسم الافتراضي.</p>
+      ${GROUPS.map(g => `<label class="f">الوجبة ${GN[g]}</label><input class="in" id="gname${g}" placeholder="الوجبة ${GN[g]}" value="${esc((st.groupNames || {})[g] || '')}">`).join('')}
+      ${Object.entries(SECTIONS).map(([k, n]) => `<label class="f">قسم ${n}</label><input class="in" id="sname_${k}" placeholder="${esc(n)}" value="${esc((st.sectionNames || {})[k] || '')}">`).join('')}
+      <button class="btn full" style="margin-top:12px" data-act="saveStructure">حفظ الهيكلية</button></div>
     <div class="card"><h3>أقسام إضافية</h3><p class="mu sm">الأقسام الأساسية: ${Object.values(SECTIONS).join('، ')}</p>
       ${Object.entries(extra).map(([k, n]) => `<div class="row between" style="padding:6px 0"><span>${esc(n)}</span><button class="btn gh sm" data-act="delSection" data-k="${esc(k)}">حذف</button></div>`).join('')}
       <div class="row" style="margin-top:8px"><input class="in" id="newSec" placeholder="اسم القسم الجديد"><button class="btn" data-act="addSection">إضافة</button></div></div>`};
@@ -1599,6 +1682,59 @@ A.newDM = () => {
   <div class="list" style="margin-top:8px">${us.map(u => `<div class="it" data-act="startDM" data-id="${esc(u.id)}"><div class="av">${esc(initials(u.name))}</div><div class="grow"><b>${esc(u.name)}</b><div class="mu sm">${esc(roleLabel(u))}</div></div></div>`).join('')}</div>`, null);
 };
 A.startDM = d => { closeModal(); go('chat', {id: dmId(S.me.id, d.id)}); };
+/* تحويل وتوجيه الرسائل (مثل تطبيقات المحادثة) */
+const findMsg = (chat, mid) => (S.msgs[chat] || []).find(m => m.id === mid);
+function msgMenu(chat, mid) {
+  const m = findMsg(chat, mid); if (!m || m.type === 'sys') return; buzz(20);
+  openModal('الرسالة', `<div class="msheet">
+    <button type="button" data-act="fwdPick" data-chat="${esc(chat)}" data-mid="${esc(mid)}" data-mode="fwd">${IC('fwd')} تحويل</button>
+    <button type="button" data-act="fwdPick" data-chat="${esc(chat)}" data-mid="${esc(mid)}" data-mode="dir">${IC('pen')} توجيه (تحويل مع كتابة توجيه)</button>
+    ${m.text ? `<button type="button" data-act="copyMsg" data-chat="${esc(chat)}" data-mid="${esc(mid)}">${IC('copy')} نسخ النص</button>` : ''}
+  </div>`, null);
+}
+A.copyMsg = async d => { const m = findMsg(d.chat, d.mid); closeModal(); try { await navigator.clipboard.writeText(m.text); toast('تم النسخ'); } catch (e) { toast('تعذر النسخ'); } };
+A.fwdPick = d => {
+  const m = findMsg(d.chat, d.mid); if (!m) return; const me = S.me; const dir = d.mode === 'dir';
+  const chats = myChats().filter(c => c.id !== d.chat);
+  const have = new Set(chats.map(c => c.id));
+  const people = S.users.filter(u => u.id !== me.id && u.active !== false && !have.has(dmId(me.id, u.id))).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  const row = (id, name, sub, av) => `<label><input type="checkbox" name="t" value="${esc(id)}"><div class="av">${av}</div><div class="grow"><b>${esc(name)}</b>${sub ? `<div class="mu sm">${esc(sub)}</div>` : ''}</div></label>`;
+  openModal(dir ? 'توجيه إلى…' : 'تحويل إلى…', `
+    ${dir ? `<label class="f">نص التوجيه</label><textarea class="in" name="dir" required placeholder="اكتب التوجيه اللازم…"></textarea>` : ''}
+    <input class="in" id="dmq" placeholder="بحث…" style="margin-top:8px">
+    <div class="tpick list">${chats.map(c => row(c.id, c.name, c.group ? 'محادثة جماعية' : roleLabel(user(c.other)), c.group ? IC('groups') : esc(initials(c.name)))).join('')}
+    ${people.map(u => row(dmId(me.id, u.id), u.name, roleLabel(u), esc(initials(u.name)))).join('')}</div>`, async fd => {
+    const ts = fd.getAll('t'); if (!ts.length) throw new Error('اختر محادثة واحدة على الأقل');
+    const dtext = dir ? (fd.get('dir') || '').trim() : ''; if (dir && !dtext) throw new Error('اكتب نص التوجيه');
+    for (const t of ts) await forwardTo(t, m, dtext);
+    Snd.play('send'); toast(ts.length > 1 ? `تم الإرسال إلى ${ts.length} محادثات` : 'تم الإرسال');
+  }, dir ? 'إرسال التوجيه' : 'تحويل');
+};
+async function forwardTo(chatId, m, dtext) {
+  const me = S.me; if (!chatAccess(chatId)) throw new Error('لا تملك صلاحية لهذه المحادثة');
+  const keep = ['type', 'fileId', 'fileName', 'fileType', 'fileSize', 'kind'];
+  const data = {chatId, by: me.id, text: m.text || '', ts: now(), fwd: true, fwdFrom: m.fwdFrom || uname(m.by)};
+  keep.forEach(k => { if (m[k] != null) data[k] = m[k]; }); if (!data.type || data.type === 'sys') data.type = 'text';
+  if (dtext) data.directive = dtext;
+  await B.add('messages', data);
+  const what = m.text ? m.text : m.type === 'image' ? '📷 صورة' : m.type === 'audio' ? '🎤 بصمة صوتية' : '📎 ' + (m.fileName || 'ملف');
+  const preview = (dtext ? '📌 توجيه: ' + dtext : '↪️ ' + what).slice(0, 80);
+  const cd = {lastTs: now(), lastText: preview, lastBy: me.id, sys: false};
+  if (chatId.startsWith('dm_')) cd.members = chatId.slice(3).split('__'); else cd.group = +chatId.slice(1);
+  await B.merge('chats', chatId, cd);
+  if (chatId.startsWith('dm_')) { const other = cd.members.find(x => x !== me.id); if (other) await notify('u:' + other, `${dtext ? '📌 توجيه' : '↪️ رسالة محوّلة'} من ${me.name}: ${preview.slice(0, 60)}`, {link: 'chat:' + chatId, urgent: !!dtext, silentToast: !dtext}); }
+  else if (dtext) await notify('g' + chatId.slice(1), `📌 توجيه من ${actor()}: ${dtext.slice(0, 70)}`, {link: 'chat:' + chatId, urgent: true});
+}
+/* الضغط المطوّل على رسالة يفتح قائمة التحويل/التوجيه */
+const LP = {t: null, x: 0, y: 0};
+document.addEventListener('pointerdown', e => {
+  const m = e.target.closest('.msg[data-mid]'); if (!m || !m.dataset.mid || e.target.closest('button,a,audio,.tr,[data-act]')) return;
+  LP.x = e.clientX; LP.y = e.clientY; clearTimeout(LP.t);
+  LP.t = setTimeout(() => { LP.t = null; m.classList.add('sel'); setTimeout(() => m.classList.remove('sel'), 400); msgMenu(m.dataset.chat, m.dataset.mid); }, 480);
+});
+document.addEventListener('pointermove', e => { if (LP.t && (Math.abs(e.clientX - LP.x) > 10 || Math.abs(e.clientY - LP.y) > 10)) { clearTimeout(LP.t); LP.t = null; } });
+['pointerup', 'pointercancel'].forEach(ev => document.addEventListener(ev, () => { if (LP.t) { clearTimeout(LP.t); LP.t = null; } }));
+document.addEventListener('contextmenu', e => { const m = e.target.closest('.msg[data-mid]'); if (m && m.dataset.mid) { e.preventDefault(); msgMenu(m.dataset.chat, m.dataset.mid); } });
 
 A.newReq = () => {
   openModal('طلب جديد', `
@@ -1656,13 +1792,25 @@ function userForm(u = {}) {
     <div id="secBox" style="${u.type === 'shift' ? 'display:none' : ''}"><label class="f">القسم</label><select class="in" name="section"><option value="">— بدون قسم —</option>${Object.entries(secs).map(([k, n]) => `<option value="${esc(k)}" ${u.section === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>
     <div id="grpBox" style="${u.type === 'shift' ? '' : 'display:none'}"><label class="f">الوجبة</label><select class="in" name="group">${GROUPS.map(g => `<option value="${g}" ${+u.group === g ? 'selected' : ''}>${gName(g)}</option>`).join('')}</select></div>
     <label class="chk"><input type="checkbox" name="head" ${u.head ? 'checked' : ''}> مسؤول القسم / الوجبة</label>
-    <label class="chk"><input type="checkbox" name="manager" ${isMgr(u) ? 'checked' : ''}> صلاحيات المدير الكاملة</label>
+    <label class="f">نوع الحساب</label><select class="in" name="role">
+      <option value="employee" ${!u.role || u.role === 'employee' ? 'selected' : ''}>موظف</option>
+      <option value="manager" ${isMgr(u) ? 'selected' : ''}>المدير (أدمن — صلاحيات كاملة)</option>
+      <option value="director" ${isDirector(u) ? 'selected' : ''}>مدير أعلى (مراسلة وتوقيع فقط)</option></select>
+    ${isMgr(S.me) ? `<details style="margin-top:12px"><summary class="b" style="cursor:pointer;padding:6px 0">الصلاحيات المخصصة لهذا الحساب</summary>
+      <p class="mu sm" style="margin:4px 0 6px">«تلقائي» تعني حسب القسم والوجبة. اختر «مسموح» أو «ممنوع» لتغييرها لهذا الحساب فقط.</p>
+      ${Object.entries(PERMS).map(([k, n]) => { const v = (u.perms || {})[k] || ''; return `<div class="row between" style="padding:5px 0;border-bottom:1px solid var(--bd)"><span class="sm grow">${n}</span><select class="in" name="perm_${k}" style="width:auto;padding:6px 8px"><option value="" ${!v ? 'selected' : ''}>تلقائي</option><option value="on" ${v === 'on' ? 'selected' : ''}>مسموح</option><option value="off" ${v === 'off' ? 'selected' : ''}>ممنوع</option></select></div>`; }).join('')}
+    </details>` : ''}
     <label class="f">العنوان الوظيفي</label><input class="in" name="job" value="${esc(u.job)}">
     <label class="f">رقم الهاتف</label><input class="in" name="phone" dir="ltr" value="${esc(u.phone)}">`;
 }
 function readUserForm(fd) {
   const type = fd.get('type');
-  return {name: fd.get('name').trim(), username: fd.get('username').trim().toLowerCase(), type, section: type === 'morning' ? fd.get('section') : '', group: type === 'shift' ? +fd.get('group') : null, head: !!fd.get('head'), role: fd.get('manager') ? 'manager' : 'employee', job: fd.get('job').trim(), phone: fd.get('phone').trim()};
+  const perms = {}; Object.keys(PERMS).forEach(k => { const v = fd.get('perm_' + k); if (v) perms[k] = v; });
+  const role = ['manager', 'director'].includes(fd.get('role')) ? fd.get('role') : 'employee';
+  const d = {name: fd.get('name').trim(), username: fd.get('username').trim().toLowerCase(), type, section: type === 'morning' ? fd.get('section') : '', group: type === 'shift' ? +fd.get('group') : null, head: !!fd.get('head'), role, job: fd.get('job').trim(), phone: fd.get('phone').trim()};
+  if (fd.has('perm_assign')) d.perms = perms;
+  if (role === 'director') { d.section = ''; d.group = null; if (!d.job) d.job = 'مدير قسم الحركة'; }
+  return d;
 }
 A.newUser = () => {
   openModal('حساب جديد', userForm({type: 'morning'}), async fd => {
@@ -1703,12 +1851,29 @@ A.saveSettings = async () => {
 A.drawSig = () => {
   openModal('توقيعي', `<p class="mu sm">ارسم توقيعك بإصبعك داخل المربع، ويُستخدم عند التوقيع على الكتب والملفات.</p>
     <canvas id="sigpad" style="width:100%;height:210px;border:2px dashed var(--bd);border-radius:12px;touch-action:none;background:#fff;display:block"></canvas>
-    <button type="button" class="btn gh sm" style="margin-top:8px" data-act="sigClear">مسح وإعادة</button>`, async () => {
+    <div class="row wrap" style="gap:6px;margin-top:8px"><button type="button" class="btn gh sm" data-act="sigClear">مسح وإعادة</button>
+    <label class="btn sec sm" style="cursor:pointer">🖼️ رفع صورة توقيع<input type="file" accept="image/*" hidden id="sigupload"></label></div>
+    <p class="mu sm" style="margin-top:6px">يمكنك رفع صورة توقيعك (يفضّل مفرّغة أو على ورقة بيضاء)، وتُزال الخلفية البيضاء تلقائياً.</p>`, async () => {
     const c = $('#sigpad'); if (!c._drawn) throw new Error('ارسم التوقيع أولاً');
     const blob = await trimCanvas(c); const id = await B.putFile(new File([blob], 'signature.png', {type: 'image/png'}), 'signature.png');
     await B.update('users', S.me.id, {sigFileId: id}); toast('تم حفظ التوقيع ✓');
   }, 'حفظ التوقيع');
-  requestAnimationFrame(() => setupPad($('#sigpad')));
+  requestAnimationFrame(() => {
+    setupPad($('#sigpad'));
+    const up = $('#sigupload'); if (up) up.onchange = async () => {
+      const f = up.files && up.files[0]; if (!f) return;
+      try {
+        const img = await loadImg(URL.createObjectURL(f)); const c = $('#sigpad'); const x = c.getContext('2d');
+        const t = document.createElement('canvas'); const sc = Math.min(1, 1400 / Math.max(img.width, img.height)); t.width = Math.round(img.width * sc); t.height = Math.round(img.height * sc);
+        const tx = t.getContext('2d'); tx.drawImage(img, 0, 0, t.width, t.height);
+        const id = tx.getImageData(0, 0, t.width, t.height); const d = id.data;
+        for (let i = 0; i < d.length; i += 4) { const l = (d[i] + d[i + 1] + d[i + 2]) / 3; if (l > 215) d[i + 3] = 0; else if (l > 160) d[i + 3] = Math.min(d[i + 3], Math.round(255 * (215 - l) / 55)); }
+        tx.putImageData(id, 0, 0);
+        x.clearRect(0, 0, c.width, c.height); const r = Math.min(c.width / t.width, c.height / t.height) * 0.92; const w = t.width * r, h = t.height * r;
+        x.drawImage(t, (c.width - w) / 2, (c.height - h) / 2, w, h); c._drawn = true; toast('تم تحميل الصورة — اضغط «حفظ التوقيع»');
+      } catch (e) { toast('تعذر قراءة الصورة'); }
+    };
+  });
 };
 A.sigClear = () => { const c = $('#sigpad'); c.getContext('2d').clearRect(0, 0, c.width, c.height); c._drawn = false; };
 A.signFile = d => {
@@ -1744,6 +1909,11 @@ A.toggleDeputy = async () => {
   await B.merge('settings', 'main', {deputy: dp});
   await notify('u:' + dp.userId, dp.active ? '✅ تم تفعيل وكالتك عن المدير' : 'تم إطفاء الوكالة عن المدير', {});
   toast(dp.active ? 'تم تفعيل الوكيل' : 'تم إطفاء الوكيل');
+};
+A.saveStructure = async () => {
+  const gn = {}; GROUPS.forEach(g => { const v = ($('#gname' + g) || {}).value; if (v && v.trim()) gn[g] = v.trim(); });
+  const sn = {}; Object.keys(SECTIONS).forEach(k => { const v = ($('#sname_' + k) || {}).value; if (v && v.trim()) sn[k] = v.trim(); });
+  await B.merge('settings', 'main', {groupNames: gn, sectionNames: sn}); toast('تم حفظ الهيكلية');
 };
 A.addSection = async () => {
   const n = $('#newSec').value.trim(); if (!n) return;

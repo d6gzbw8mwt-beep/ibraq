@@ -52,7 +52,156 @@ class IbraqApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'الإبراق الإلكتروني',
       theme: ThemeData(colorSchemeSeed: const Color(0xFF0C5A32), useMaterial3: true),
-      home: const WebShell(),
+      home: const PermissionGate(),
+    );
+  }
+}
+
+// ---------------- بوابة الأذونات: لا يعمل التطبيق إلا بعد الموافقة على كل الأذونات ----------------
+class PermissionGate extends StatefulWidget {
+  const PermissionGate({super.key});
+  @override
+  State<PermissionGate> createState() => _PermissionGateState();
+}
+
+class _PermissionGateState extends State<PermissionGate> with WidgetsBindingObserver {
+  bool _ok = false;
+  bool _busy = false;
+  bool _waitingSettings = false;
+
+  static const _labels = {
+    'location': 'الموقع (السماح طوال الوقت)',
+    'notification': 'الإشعارات',
+    'microphone': 'المايكروفون',
+    'camera': 'الكاميرا',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _run());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _waitingSettings && !_ok) {
+      _waitingSettings = false;
+      _run();
+    }
+  }
+
+  Future<List<String>> _missing() async {
+    final m = <String>[];
+    if (!await Permission.locationWhenInUse.isGranted || !await Permission.locationAlways.isGranted) m.add('location');
+    if (!await Permission.notification.isGranted) m.add('notification');
+    if (!await Permission.microphone.isGranted) m.add('microphone');
+    if (!await Permission.camera.isGranted) m.add('camera');
+    return m;
+  }
+
+  Future<void> _run() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await [Permission.notification, Permission.microphone, Permission.camera, Permission.locationWhenInUse].request();
+      if (await Permission.locationWhenInUse.isGranted && !await Permission.locationAlways.isGranted) {
+        await Permission.locationAlways.request();
+      }
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        await Geolocator.openLocationSettings();
+      }
+      final miss = await _missing();
+      if (!mounted) return;
+      if (miss.isEmpty) {
+        setState(() => _ok = true);
+        return;
+      }
+      await _denied(miss);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _denied(List<String> miss) async {
+    final again = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('يجب الموافقة على الأذونات'),
+          content: Text('لا يعمل تطبيق الإبراق إلا بعد الموافقة على كل الأذونات التالية:\n\n'
+              '${miss.map((k) => '• ${_labels[k]}').join('\n')}\n\n'
+              'اضغط «تفعيل الأذونات» ثم وافق عليها، أو سيتم إغلاق التطبيق.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إغلاق التطبيق')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('تفعيل الأذونات')),
+          ],
+        ),
+      ),
+    );
+    if (again != true) {
+      await SystemNavigator.pop();
+      exit(0);
+    }
+    // إذا رفض المستخدم نهائياً، النظام لا يعرض الطلب مرة أخرى: نفتح إعدادات التطبيق
+    bool permanent = false;
+    for (final p in [Permission.notification, Permission.microphone, Permission.camera, Permission.locationWhenInUse, Permission.locationAlways]) {
+      if (await p.isPermanentlyDenied) permanent = true;
+    }
+    final onlyAlways = miss.length == 1 && miss.first == 'location' && await Permission.locationWhenInUse.isGranted;
+    if (permanent || onlyAlways) {
+      _waitingSettings = true;
+      await openAppSettings();
+      return;
+    }
+    _busy = false;
+    await _run();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_ok) return const WebShell();
+    return Scaffold(
+      backgroundColor: const Color(0xFF0C5A32),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 110,
+              height: 110,
+              padding: const EdgeInsets.all(14),
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              child: Image.asset('assets/web/logo-mark.png'),
+            ),
+            const SizedBox(height: 22),
+            const Text('الإبراق الإلكتروني',
+                style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            const Text('للمتابعة وافق على أذونات الموقع والإشعارات والمايكروفون والكاميرا',
+                textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 15)),
+            const SizedBox(height: 24),
+            _busy
+                ? const CircularProgressIndicator(color: Colors.white)
+                : FilledButton(
+                    style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF0C5A32)),
+                    onPressed: _run,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                      child: Text('تفعيل الأذونات', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+          ]),
+        ),
+      ),
     );
   }
 }
@@ -83,9 +232,7 @@ class _WebShellState extends State<WebShell> {
     super.dispose();
   }
 
-  Future<void> _askBasicPermissions() async {
-    await [Permission.notification, Permission.microphone, Permission.camera].request();
-  }
+  Future<void> _askBasicPermissions() async {}
 
   // ---------------- الموقع بالخلفية ----------------
   Future<bool> _startTracking(Map<String, dynamic> args) async {
