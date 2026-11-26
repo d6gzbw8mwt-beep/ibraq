@@ -237,6 +237,15 @@ input.in,select.in,textarea.in{border-radius:12px;padding:11px 13px;background:#
 .tpick label{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid var(--bd);cursor:pointer}
 .tpick input{width:20px;height:20px;accent-color:#1a9e4b}
 .msg{-webkit-user-select:text;user-select:text}
+/* سلاسة الحركة والتمرير */
+html{scroll-behavior:auto}
+button,.crow,.it,.chip,label.cb,.cbig,.fab,nav.bot button{touch-action:manipulation}
+.msgs{-webkit-overflow-scrolling:touch;overscroll-behavior:contain;will-change:scroll-position}
+.msg,.crow{contain:layout paint style}
+.clist .crow{content-visibility:auto;contain-intrinsic-size:auto 74px}
+header.top,nav.bot{transform:translateZ(0);backface-visibility:hidden}
+.toast{animation-duration:.15s}
+@media (prefers-reduced-motion:reduce){main.enter,.viewer{animation:none}}
 .viewer{position:fixed;inset:0;z-index:80;background:#0b141a;display:flex;flex-direction:column;animation:fadein .15s}
 @keyframes fadein{from{opacity:0}}
 .vbar{display:flex;align-items:center;gap:6px;padding:calc(6px + env(safe-area-inset-top)) 8px 6px;background:rgba(11,20,26,.92);color:#fff;flex:none}
