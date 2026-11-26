@@ -35,6 +35,13 @@ jobs:
           flutter pub get
           dart run flutter_launcher_icons
 
+      - name: توافق الإضافات مع إصدار Gradle الجديد
+        run: |
+          # بعض الإضافات (مثل flutter_inappwebview_android) ما زالت تستخدم proguard-android.txt
+          # والذي لم يعد مدعوماً في Android Gradle Plugin الحديث
+          find "$HOME/.pub-cache/hosted" -path '*/android/build.gradle*' -type f \
+            -exec sed -i 's/proguard-android\.txt/proguard-android-optimize.txt/g' {} +
+
       - name: بناء APK
         run: flutter build apk --release
 
