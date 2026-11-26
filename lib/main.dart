@@ -29,6 +29,12 @@ final FlutterLocalNotificationsPlugin notifs = FlutterLocalNotificationsPlugin()
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Color(0xFF0C5A32),
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: Colors.white,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
   await localServer.start();
   await notifs.initialize(const InitializationSettings(
     android: AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -45,7 +51,7 @@ class IbraqApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'الإبراق الإلكتروني',
-      theme: ThemeData(colorSchemeSeed: const Color(0xFF0F4C5C), useMaterial3: true),
+      theme: ThemeData(colorSchemeSeed: const Color(0xFF0C5A32), useMaterial3: true),
       home: const WebShell(),
     );
   }
@@ -216,7 +222,7 @@ class _WebShellState extends State<WebShell> {
         if (!didPop) _handleBack();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFF0F4C5C),
+        backgroundColor: const Color(0xFF0C5A32),
         body: SafeArea(
           bottom: false,
           child: Stack(children: [
@@ -235,7 +241,21 @@ class _WebShellState extends State<WebShell> {
                 geolocationEnabled: true,
                 allowFileAccess: true,
                 mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
-                transparentBackground: true,
+                transparentBackground: false,
+                hardwareAcceleration: true,
+                useHybridComposition: true,
+                overScrollMode: OverScrollMode.NEVER,
+                textZoom: 100,
+                minimumFontSize: 1,
+                verticalScrollBarEnabled: false,
+                horizontalScrollBarEnabled: false,
+                disableHorizontalScroll: true,
+                disableContextMenu: false,
+                builtInZoomControls: false,
+                displayZoomControls: false,
+                useWideViewPort: true,
+                loadWithOverviewMode: false,
+                cacheEnabled: true,
               ),
               onWebViewCreated: (c) {
                 _web = c;

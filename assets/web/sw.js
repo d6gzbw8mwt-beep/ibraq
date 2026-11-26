@@ -1,5 +1,5 @@
 // خدمة العمل: تجعل التطبيق قابلاً للتثبيت ويعمل عند ضعف الإنترنت
-const CACHE = 'ibraq-v2';
+const CACHE = 'ibraq-v3';
 const SHELL = ['./', './index.html', './config.js', './manifest.json', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f4c5c">
+<meta name="theme-color" content="#0c5a32">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="الإبراق">
@@ -13,13 +13,13 @@
 <title>الإبراق الإلكتروني</title>
 <style>
 :root{
-  --p:#0f4c5c; --p2:#136f80; --pl:#e3f0f2; --a:#e09f3e; --al:#fdf3e3;
-  --bg:#f3f5f7; --card:#fff; --tx:#1b2a33; --mu:#6b7b86; --bd:#e2e7eb;
+  --p:#0c5a32; --p2:#167a3e; --pl:#e7f3ea; --a:#e2a72e; --al:#fdf5e2;
+  --bg:#f0f2f5; --card:#fff; --tx:#111b21; --mu:#667781; --bd:#e9edef;
   --ok:#2e8b57; --okl:#e5f4ec; --bad:#c0392b; --badl:#fbe9e7; --warn:#b7791f;
   --r:14px; --sh:0 1px 3px rgba(16,40,52,.08),0 4px 14px rgba(16,40,52,.05);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--tx);font-family:"Segoe UI",Tahoma,"Noto Sans Arabic","Geeza Pro",Arial,sans-serif;font-size:15px;line-height:1.55}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,system-ui,"SF Arabic","Segoe UI",Roboto,"Noto Sans Arabic","Geeza Pro",Tahoma,sans-serif;font-size:15.5px;line-height:1.5;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--p2)}
 #app{max-width:720px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
@@ -125,6 +125,104 @@ table.t td,table.t th{padding:7px 4px;border-bottom:1px solid var(--bd);text-ali
 .seg button.on{background:var(--p);color:#fff}
 .tl{border-inline-start:3px solid var(--bd);margin-inline-start:6px;padding-inline-start:12px}
 .sec-title{font-size:13px;color:var(--mu);font-weight:700;margin:16px 4px 8px}
+
+/* ============ تحسينات الواجهة (أسلوب تطبيقات المحادثة) ============ */
+svg.ic{width:24px;height:24px;fill:currentColor;display:block}
+header.top{background:var(--p);padding:calc(8px + env(safe-area-inset-top)) 10px 8px;min-height:56px;box-shadow:none}
+header.top h1{font-size:18px;font-weight:600;letter-spacing:0}
+header.top .sub{font-size:12.5px;opacity:.85;margin-top:1px}
+.ib{background:transparent;width:40px;height:40px;border-radius:50%;transition:background .15s}
+.ib:active{background:rgba(255,255,255,.18)}
+.hlogo{width:38px;height:38px;border-radius:50%;background:#fff;display:grid;place-items:center;flex:none;overflow:hidden}
+.hlogo img{width:32px;height:32px}
+.hav{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;display:grid;place-items:center;font-weight:700;flex:none;font-size:15px}
+.hav svg.ic{width:22px;height:22px}
+main.enter{animation:enter .22s ease-out}
+@keyframes enter{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+nav.bot{background:#fff;border-top:0;box-shadow:0 -1px 0 var(--bd)}
+nav.bot button{padding:7px 2px 8px;font-size:12px;gap:3px;color:#54656f}
+nav.bot button .i{display:grid;place-items:center;width:58px;height:30px;border-radius:16px;transition:background .2s}
+nav.bot button.on{color:var(--tx);font-weight:700}
+nav.bot button.on .i{background:#d8f2df;color:var(--p)}
+.dot{top:3px;right:calc(50% - 26px);background:#25a85a;min-width:19px;height:19px;font-weight:700;border:2px solid #fff}
+.card{border-radius:16px;box-shadow:0 1px 2px rgba(11,20,26,.08)}
+.btn{border-radius:24px;padding:11px 18px;transition:filter .15s,transform .1s}
+.btn:active{filter:brightness(.92)}
+.btn.sm{border-radius:18px}
+.fab{width:58px;height:58px;border-radius:18px;background:#1a9e4b;box-shadow:0 3px 10px rgba(0,0,0,.22);display:grid;place-items:center}
+.fab svg.ic{width:26px;height:26px}
+.fab:active{transform:scale(.95)}
+input.in,select.in,textarea.in{border-radius:12px;padding:11px 13px;background:#fff}
+.stat{border-radius:14px}
+.logo{width:120px;height:auto;background:none;box-shadow:none;border-radius:0;display:block;margin:0 auto 14px}
+.logo img{width:100%;height:auto;display:block}
+.it,.chip,.stat,.seg button,nav.bot button{transition:background .15s}
+.list .it:active{background:#f5f6f6}
+/* قائمة المحادثات */
+.clist{background:#fff;margin:-12px -12px 0}
+.crow{display:flex;align-items:center;gap:13px;padding:0 16px;cursor:pointer;transition:background .12s}
+.crow:active{background:#f5f6f6}
+.crow .av{width:50px;height:50px;font-size:17px}
+.crow .av svg.ic{width:28px;height:28px}
+.crow .bd{flex:1;min-width:0;padding:12px 0;border-bottom:1px solid #f0f2f5}
+.crow:last-child .bd{border-bottom:0}
+.crow .nm{font-size:16.5px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .lt{font-size:14px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .tm{font-size:12px;color:var(--mu);flex:none}
+.crow.unread .tm{color:#1a9e4b;font-weight:600}
+.crow.unread .lt{color:var(--tx);font-weight:500}
+.ubadge{background:#25a85a;color:#fff;border-radius:12px;min-width:21px;height:21px;font-size:12px;font-weight:700;display:grid;place-items:center;padding:0 6px;flex:none}
+/* شاشة المحادثة */
+.msgs{background-color:#efeae2;background-image:radial-gradient(rgba(0,0,0,.035) 1.2px,transparent 1.3px);background-size:18px 18px;padding:10px 14px}
+.msg{position:relative;max-width:80%;margin:2px 0;padding:6px 9px 7px;border-radius:10px;box-shadow:0 1px .5px rgba(11,20,26,.13);font-size:15.5px;line-height:1.4}
+.msg.me{background:#d9fdd3;border-start-end-radius:2px;border-end-end-radius:10px}
+.msg.ot{border-start-start-radius:2px;border-end-start-radius:10px}
+.msg.me+.msg.me,.msg.ot+.msg.ot{border-start-end-radius:10px;border-start-start-radius:10px}
+.msg.me:not(.msg.me+.msg.me),.msg.ot:not(.msg.ot+.msg.ot){margin-top:8px}
+.msg.me:not(.msg.me+.msg.me)::before{content:"";position:absolute;top:0;inset-inline-end:-7px;border-width:0 0 10px 8px;border-style:solid;border-color:transparent transparent transparent #d9fdd3;transform:scaleX(-1)}
+[dir=rtl] .msg.me:not(.msg.me+.msg.me)::before{border-width:0 8px 10px 0;border-color:transparent #d9fdd3 transparent transparent;transform:none}
+.msg.ot:not(.msg.ot+.msg.ot)::before{content:"";position:absolute;top:0;inset-inline-start:-7px;border-width:0 8px 10px 0;border-style:solid;border-color:transparent #fff transparent transparent}
+[dir=rtl] .msg.ot:not(.msg.ot+.msg.ot)::before{border-width:0 0 10px 8px;border-color:transparent transparent transparent #fff}
+.msg .who{font-size:13px;font-weight:600;color:#1f8a70}
+.msg .tm{float:left;font-size:11px;color:#667781;margin:6px 10px -4px 0;line-height:1;position:relative;top:2px}
+.msg::after{content:"";display:block;clear:both}
+.msg.sys::after{display:none}
+.msg.sys{background:#fff7d6;color:#54656f;box-shadow:0 1px .5px rgba(11,20,26,.13);border-radius:8px;font-size:13px;padding:6px 12px}
+.msg.sys .tm{float:none;margin:4px 0 0}
+.msg.sys::before{display:none}
+.daysep span{background:#fff;color:#54656f;font-size:12.5px;padding:5px 12px;border-radius:8px;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+.composer{background:transparent;border-top:0;padding:6px 8px calc(8px + env(safe-area-inset-bottom));gap:6px;align-items:flex-end;background:#efeae2}
+.cpill{flex:1;display:flex;align-items:flex-end;background:#fff;border-radius:24px;padding:0 4px;box-shadow:0 1px .5px rgba(11,20,26,.13);min-height:48px}
+.cpill textarea{flex:1;border:0;background:transparent;padding:13px 6px;min-height:48px;max-height:120px;resize:none;outline:none;font-size:16px;line-height:1.35}
+.cpill .cb{background:transparent;color:#54656f;width:40px;height:48px;border-radius:50%}
+.cpill .cb svg.ic{width:24px;height:24px}
+.cbig{width:48px;height:48px;border-radius:50%;border:0;background:#1a9e4b;color:#fff;display:grid;place-items:center;cursor:pointer;flex:none;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.cbig:active{transform:scale(.94)}
+.cbig.rec{background:var(--bad);animation:pulse 1s infinite}
+.composer .cbig.send{display:none}
+.composer.typing .cbig.send{display:grid}
+.composer.typing .cbig.mic{display:none}
+.composer.typing .cpill .cam{display:none}
+.recui{display:none;flex:1;align-items:center;gap:10px;background:#fff;border-radius:24px;min-height:48px;padding:0 16px;box-shadow:0 1px .5px rgba(11,20,26,.13);font-size:16px;color:var(--tx)}
+.composer.recording .cpill{display:none}
+.composer.recording .recui{display:flex}
+.composer.recording .cbig.send{display:none}
+.composer.recording .cbig.mic{transform:scale(1.25);background:var(--bad)}
+.rdot{width:10px;height:10px;border-radius:50%;background:var(--bad);animation:pulse 1s infinite}
+.rhint{color:var(--mu);font-size:14px}
+.composer.cancel .rhint{color:var(--bad);font-weight:700}
+.cbig.mic{touch-action:none;user-select:none;-webkit-user-select:none;transition:transform .15s}
+/* البصمة الصوتية */
+.vn{display:flex;align-items:center;gap:8px;min-width:210px;padding:2px 0 4px}
+.vn .pb{width:40px;height:40px;border-radius:50%;border:0;background:transparent;color:#54656f;display:grid;place-items:center;cursor:pointer;flex:none}
+.vn .pb svg.ic{width:30px;height:30px}
+.vn .tr{flex:1;height:4px;border-radius:2px;background:#c8d0d3;position:relative;cursor:pointer}
+.vn .tr i{position:absolute;inset-inline-start:0;top:0;bottom:0;background:#1a9e4b;border-radius:2px;width:0}
+.vn .tr b{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;background:#1a9e4b;transform:translate(50%,-50%);inset-inline-start:0}
+.vn .du{font-size:11.5px;color:#667781;min-width:32px}
+.vn .vav{width:40px;height:40px;border-radius:50%;background:var(--pl);color:var(--p);display:grid;place-items:center;flex:none}
+.vn .vav svg.ic{width:22px;height:22px}
+.msg .att img{border-radius:8px;margin:0 -5px 4px;max-width:calc(100% + 10px)}
 </style>
 </head>
 <body>
@@ -152,6 +250,73 @@ const ACT_T = {seen: ['done', '👁️ اطلاع'], directive: ['directive', '�
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+/* أيقونات SVG واضحة بدل الرموز التعبيرية */
+const ICP = {
+  home: 'M12 3 2 11.5h3V21h6v-6h2v6h6v-9.5h3z',
+  groups: 'M16 11a3.5 3.5 0 1 0-3.5-3.5A3.5 3.5 0 0 0 16 11zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0 2c-2.6 0-7 1.3-7 3.9V20h7v-3.1c0-1 .4-2.4 2.3-3.6A11 11 0 0 0 8 13zm8 0c-2.9 0-8 1.4-8 4.1V20h16v-2.9c0-2.7-5.1-4.1-8-4.1z',
+  chat: 'M12 2a10 10 0 0 0-8.7 14.9L2 22l5.2-1.3A10 10 0 1 0 12 2zm-4 11.3a1.3 1.3 0 1 1 1.3-1.3A1.3 1.3 0 0 1 8 13.3zm4 0a1.3 1.3 0 1 1 1.3-1.3 1.3 1.3 0 0 1-1.3 1.3zm4 0a1.3 1.3 0 1 1 1.3-1.3 1.3 1.3 0 0 1-1.3 1.3z',
+  req: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm-1 7V3.5L18.5 9zM8 13h8v2H8zm0 4h8v2H8z',
+  menu: 'M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z',
+  back: 'M4 11h12.2l-5.6-5.6L12 4l8 8-8 8-1.4-1.4 5.6-5.6H4z',
+  send: 'M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z',
+  mic: 'M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15zm6-3.5a6 6 0 0 1-12 0H4.3a7.7 7.7 0 0 0 6.8 7.6V22h1.8v-2.9a7.7 7.7 0 0 0 6.8-7.6z',
+  clip: 'M16.5 6v11.5a4.5 4.5 0 0 1-9 0V5a3 3 0 0 1 6 0v10.5a1.5 1.5 0 0 1-3 0V6H9v9.5a3 3 0 0 0 6 0V5a4.5 4.5 0 0 0-9 0v12.5a6 6 0 0 0 12 0V6z',
+  cam: 'M12 9a4 4 0 1 0 4 4 4 4 0 0 0-4-4zm8-3h-3.2L15 4H9L7.2 6H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2zm-8 12.5a5.5 5.5 0 1 1 5.5-5.5 5.5 5.5 0 0 1-5.5 5.5z',
+  plus: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z',
+  msg: 'M19 3H5a2 2 0 0 0-2 2v14l4-4h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 8h8v2H8zm0 3h5v2H8z',
+  info: 'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z',
+  play: 'M8 5v14l11-7z', pause: 'M6 5h4v14H6zm8 0h4v14h-4z',
+  trash: 'M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z',
+  pen: 'M3 17.3V21h3.8l11-11-3.8-3.8zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.8 3.8z',
+  person: 'M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12zm0 2c-3 0-9 1.5-9 4.5V21h18v-2.5c0-3-6-4.5-9-4.5z'
+};
+const IC = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICP[n] || ''}"/></svg>`;
+/* تحديث الشاشة بدون إعادة رسمها بالكامل (حركة أنعم وبدون وميض) */
+function morph(from, html) { const t = document.createElement(from.tagName); t.innerHTML = html; morphKids(from, t); }
+function sameNode(a, b) {
+  if (a.nodeType !== b.nodeType) return false; if (a.nodeType !== 1) return true;
+  return a.tagName === b.tagName && a.id === b.id && a.getAttribute('data-fid') === b.getAttribute('data-fid') && a.getAttribute('data-key') === b.getAttribute('data-key');
+}
+function morphKids(from, to) {
+  const tc = [...to.childNodes]; let i = 0;
+  for (const n of tc) {
+    const cur = from.childNodes[i];
+    if (!cur) from.appendChild(n);
+    else if (sameNode(cur, n)) morphNode(cur, n);
+    else from.insertBefore(n, cur);
+    i++;
+  }
+  while (from.childNodes.length > i) from.removeChild(from.lastChild);
+}
+function morphNode(a, b) {
+  if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
+  const hyd = a.hasAttribute('data-h');
+  for (const at of [...a.attributes]) {
+    if (b.hasAttribute(at.name)) continue;
+    if (hyd && (at.name === 'data-h' || at.name === 'src')) continue;
+    if (at.name === 'style' && a.id === 'mtext') continue;
+    a.removeAttribute(at.name);
+  }
+  for (const at of [...b.attributes]) if (a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value);
+  if (a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || (a.tagName === 'INPUT' && a.type !== 'file')) return;
+  if (a.tagName === 'AUDIO' || a.tagName === 'CANVAS') return;
+  morphKids(a, b);
+}
+/* أصوات خفيفة مثل تطبيقات المحادثة */
+const Snd = {
+  ctx: null,
+  play(kind) {
+    try {
+      const C = this.ctx || (this.ctx = new (window.AudioContext || window.webkitAudioContext)()); if (C.state === 'suspended') C.resume();
+      const o = C.createOscillator(), g = C.createGain(); o.connect(g); g.connect(C.destination); const t = C.currentTime;
+      const f = kind === 'send' ? [520, 880] : kind === 'recv' ? [880, 660] : [700, 700];
+      o.type = 'sine'; o.frequency.setValueAtTime(f[0], t); o.frequency.exponentialRampToValueAtTime(f[1], t + 0.09);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(kind === 'tick' ? 0.08 : 0.16, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      o.start(t); o.stop(t + 0.18);
+    } catch (e) {}
+  }
+};
+const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
 const now = () => Date.now();
@@ -391,15 +556,26 @@ function attHTML(o) {
   const k = kindOf(o.fileType || '');
   const ic = /pdf/.test(o.fileType) ? '📕' : /sheet|excel|csv/.test(o.fileType) || /\.xlsx?$/i.test(o.fileName) ? '📗' : /word/.test(o.fileType) ? '📘' : '📎';
   if (k === 'image') return `<div class="att"><img data-fid="${esc(o.fileId)}" data-k="image" alt=""></div>`;
-  if (k === 'audio') return `<div class="att"><audio controls preload="none" data-fid="${esc(o.fileId)}" data-k="audio"></audio></div>`;
+  if (k === 'audio') return `<div class="att vn" data-key="vn${esc(o.fileId)}"><span class="vav">${IC('mic')}</span><button class="pb" data-act="vnPlay">${IC('play')}</button><div class="tr" data-act="vnSeek"><i></i><b></b></div><span class="du">0:00</span><audio preload="metadata" data-fid="${esc(o.fileId)}" data-k="audio" hidden></audio></div>`;
   return `<div class="att"><span class="fl" data-fid="${esc(o.fileId)}" data-k="file" data-act="openFile" data-id="${esc(o.fileId)}">${ic} ${esc(o.fileName)} ${o.fileSize ? '<span class="mu sm">(' + fsize(o.fileSize) + ')</span>' : ''}</span></div>`;
 }
 function hydrate(root = document) {
   $$('[data-fid]:not([data-h])', root).forEach(el => {
     el.setAttribute('data-h', '1'); const k = el.dataset.k; if (k === 'file') return;
+    if (k === 'audio') wireVN(el);
     fileURL(el.dataset.fid).then(f => { el.src = f.url; if (k === 'image') el.onclick = () => viewImage(f.url); })
       .catch(() => { if (k === 'image') el.alt = 'تعذر تحميل الصورة'; });
   });
+}
+function wireVN(au) {
+  const fmt = t => isFinite(t) ? `${Math.floor(t / 60)}:${pad(Math.floor(t % 60))}` : '0:00';
+  const upd = () => { const b = au.closest('.vn'); if (!b) return; const d = au.duration, c = au.currentTime, pc = isFinite(d) && d ? Math.min(100, c / d * 100) : 0;
+    const i = $('.tr i', b), k = $('.tr b', b); if (i) i.style.width = pc + '%'; if (k) k.style.insetInlineStart = pc + '%';
+    const du = $('.du', b); if (du) du.textContent = fmt(au.paused && !c ? d : c);
+    const pb = $('.pb', b); if (pb) pb.innerHTML = IC(au.paused ? 'play' : 'pause'); };
+  ['loadedmetadata', 'durationchange', 'timeupdate', 'play', 'pause'].forEach(ev => au.addEventListener(ev, upd));
+  au.addEventListener('ended', () => { au.currentTime = 0; upd(); });
+  au.addEventListener('loadedmetadata', () => { if (au.duration === Infinity) { au.currentTime = 1e7; const f = () => { au.removeEventListener('timeupdate', f); au.currentTime = 0; upd(); }; au.addEventListener('timeupdate', f); } });
 }
 function viewImage(url) {
   const d = document.createElement('div'); d.className = 'imgview'; const im = document.createElement('img'); im.src = url; d.appendChild(im);
@@ -718,9 +894,9 @@ let renderQueued = false;
 function render() { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; doRender(); }); }
 function doRender() {
   const app = $('#app');
-  if (!S.ready || !S.usersLoaded) { app.innerHTML = `<div class="center"><div><div class="spin"></div><p class="mu" style="text-align:center">${esc(S.bootMsg || 'جارِ التحميل…')}</p></div></div>`; return; }
-  if (!S.users.length) { if (!$('#setupForm')) app.innerHTML = viewSetup(); return; }
-  if (!S.me) { if (!$('#loginForm')) app.innerHTML = viewLogin(); return; }
+  if (!S.ready || !S.usersLoaded) { app.dataset.shell = ''; app.innerHTML = `<div class="center"><div><div class="spin"></div><p class="mu" style="text-align:center">${esc(S.bootMsg || 'جارِ التحميل…')}</p></div></div>`; return; }
+  if (!S.users.length) { if (!$('#setupForm')) { app.innerHTML = viewSetup(); app.dataset.shell = ''; } return; }
+  if (!S.me) { if (!$('#loginForm')) { app.innerHTML = viewLogin(); app.dataset.shell = ''; } return; }
   // حفظ ما يكتبه المستخدم قبل إعادة الرسم
   const keep = {}; let focusId = null, selS = null, scrollMsgs = null, nearBottom = true;
   if (!S.fresh) {
@@ -731,21 +907,23 @@ function doRender() {
   const wasFresh = S.fresh; S.fresh = false;
   const V = VIEWS[S.view] || VIEWS.home;
   const v = V();
-  app.innerHTML = `
-    <header class="top">${v.back ? `<button class="ib" data-act="back">→</button>` : `<div class="ib" style="background:rgba(255,255,255,.2)">📨</div>`}
+  const html = `
+    <header class="top">${v.back ? `<button class="ib" data-act="back">${IC('back')}</button>` : `<div class="hlogo"><img src="logo-mark.png" alt=""></div>`}${v.avatar || ''}
       <h1>${esc(v.title)}${v.sub ? `<div class="sub">${esc(v.sub)}</div>` : ''}</h1>${v.actions || ''}</header>
     <main id="main" class="${v.chat ? 'chatmain' : ''}">${v.html}</main>
     ${v.chat ? '' : navHTML()}${v.fab || ''}`;
+  if (app.dataset.shell !== '1') { app.innerHTML = html; app.dataset.shell = '1'; } else morph(app, html);
+  if (wasFresh) { const mn = $('#main'); if (mn) { mn.classList.remove('enter'); void mn.offsetWidth; mn.classList.add('enter'); } }
   Object.entries(keep).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (selS != null) el.setSelectionRange(selS, selS); } catch (e) {} } }
   const m = $('#msgs'); if (m) { if (wasFresh || nearBottom || scrollMsgs == null) m.scrollTop = m.scrollHeight; else m.scrollTop = scrollMsgs; }
-  hydrate(app);
+  hydrate(app); syncComposer();
   if (v.after) v.after();
 }
 function navHTML() {
-  const me = S.me; const tabs = [['home', '🏠', 'الرئيسية']];
-  if (me.type === 'shift') tabs.push(['mygroup', '👥', 'وجبتي']); else tabs.push(['groups', '👥', 'الوجبات']);
-  tabs.push(['chats', '💬', 'الرسائل'], ['requests', '📝', 'الطلبات'], ['more', '☰', 'المزيد']);
+  const me = S.me; const tabs = [['home', IC('home'), 'الرئيسية']];
+  if (me.type === 'shift') tabs.push(['mygroup', IC('groups'), 'وجبتي']); else tabs.push(['groups', IC('groups'), 'الوجبات']);
+  tabs.push(['chats', IC('chat'), 'الرسائل'], ['requests', IC('req'), 'الطلبات'], ['more', IC('menu'), 'المزيد']);
   const rootOf = {group: me.type === 'shift' ? 'mygroup' : 'groups', task: me.type === 'shift' ? 'mygroup' : 'groups', post: me.type === 'shift' ? 'mygroup' : 'groups', chat: 'chats', docs: 'more', reports: 'more', map: 'more', users: 'more', settings: 'more', profile: 'more', roster: 'more'};
   const cur = rootOf[S.view] || S.view;
   const unread = unreadCount(); const pend = S.requests.filter(r => canDecide(me, r)).length;
@@ -769,7 +947,7 @@ function chatAccess(id) { if (!S.me) return false; if (id.startsWith('g')) retur
 /* =================== الشاشات =================== */
 function viewSetup() {
   return `<div class="center"><div class="auth">
-    <div class="logo">📨</div><h2 style="text-align:center;margin:0">${APP}</h2><p class="mu" style="text-align:center;margin:0">${esc(ORG)}</p>
+    <div class="logo"><img src="logo.png" alt="OPDC"></div><h2 style="text-align:center;margin:0">${APP}</h2><p class="mu" style="text-align:center;margin:0">${esc(ORG)}</p>
     <p class="mu" style="text-align:center">أول تشغيل: أنشئ حساب المدير</p>
     ${B.mode === 'local' ? `<div class="notice">وضع تجريبي: البيانات تُحفظ على هذا الجهاز فقط. للربط بين كل الموظفين اتبع دليل التشغيل.</div>` : ''}
     <form class="card" id="setupForm">
@@ -783,7 +961,7 @@ function viewSetup() {
 }
 function viewLogin() {
   return `<div class="center"><div class="auth">
-    <div class="logo">📨</div><h2 style="text-align:center;margin:0">${APP}</h2><p class="mu" style="text-align:center;margin-top:2px">${esc(ORG)} — تسجيل الدخول</p>
+    <div class="logo"><img src="logo.png" alt="OPDC"></div><h2 style="text-align:center;margin:0">${APP}</h2><p class="mu" style="text-align:center;margin-top:2px">${esc(ORG)} — تسجيل الدخول</p>
     ${B.mode === 'local' ? `<div class="notice">وضع تجريبي على هذا الجهاز فقط.${IN_FRAME ? ' في المعاينة لا تعمل: الموقع، التسجيل الصوتي، تنزيل الملفات، والتثبيت — تعمل كلها بعد رفع التطبيق على رابطك.' : ''}${ls.get('dawam_seeded', false) ? ' جرّب: <b dir="ltr">manager</b> أو <b dir="ltr">idara</b> أو <b dir="ltr">mutaba</b> أو <b dir="ltr">mawaqif</b> أو <b dir="ltr">g1a</b> — وكلمة السر <b>1234</b>' : ''}</div>` : ''}
     <form class="card" id="loginForm">
       <label class="f">اسم المستخدم</label><input class="in" name="username" required dir="ltr" autocapitalize="off" autocomplete="username">
@@ -1026,7 +1204,7 @@ function watchComments(id) {
 const msgSubs = {};
 function watchMsgs(id) {
   if (msgSubs[id]) return;
-  msgSubs[id] = B.watch('messages', list => { S.msgs[id] = list; if (S.view === 'chat' && S.params.id === id) { markRead(id); render(); } }, ['chatId', id]);
+  msgSubs[id] = B.watch('messages', list => { const prev = S.msgs[id]; S.msgs[id] = list; if (S.view === 'chat' && S.params.id === id) { if (prev && list.length > prev.length && list.some(m => m.by !== (S.me && S.me.id) && !prev.some(p => p.id === m.id))) Snd.play('recv'); markRead(id); render(); } }, ['chatId', id]);
   S.subs.push(msgSubs[id]);
 }
 
@@ -1034,11 +1212,11 @@ VIEWS.chats = () => {
   const list = myChats();
   return {
     title: 'الرسائل', sub: 'محادثات الوجبات والمراسلة بين الموظفين',
-    html: `<div class="card list" style="padding:4px 12px">${list.map(c => `<div class="it" data-act="go" data-v="chat" data-id="${esc(c.id)}">
-      <div class="av ${c.group ? 'g' : ''}">${c.group ? '👥' : esc(initials(c.name))}</div>
-      <div class="grow"><div class="row between"><b>${esc(c.name)}</b><span class="mu sm">${c.lastTs ? fmtDT(c.lastTs) : ''}</span></div>
-      <div class="row between"><span class="mu sm" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.lastText ? (c.lastBy === S.me.id ? 'أنت: ' : c.group && c.lastBy ? esc(uname(c.lastBy)) + ': ' : '') + esc(c.lastText) : 'لا توجد رسائل'}</span>${isUnread(c) ? '<span class="tag urgent">جديد</span>' : ''}</div></div></div>`).join('')}</div>`,
-    fab: `<button class="fab" data-act="newDM">✉️</button>`
+    html: `<div class="clist">${list.map(c => `<div class="crow ${isUnread(c) ? 'unread' : ''}" data-key="${esc(c.id)}" data-act="go" data-v="chat" data-id="${esc(c.id)}">
+      <div class="av ${c.group ? 'g' : ''}">${c.group ? IC('groups') : esc(initials(c.name))}</div>
+      <div class="bd"><div class="row between" style="gap:8px"><div class="nm">${esc(c.name)}</div><span class="tm">${c.lastTs ? fmtDT(c.lastTs) : ''}</span></div>
+      <div class="row between" style="gap:8px;margin-top:2px"><div class="lt">${c.lastText ? (c.lastBy === S.me.id ? 'أنت: ' : c.group && c.lastBy ? esc(uname(c.lastBy)) + ': ' : '') + esc(c.lastText) : 'لا توجد رسائل'}</div>${isUnread(c) ? '<span class="ubadge">●</span>' : ''}</div></div></div>`).join('') || '<div class="empty">لا توجد محادثات</div>'}</div>`,
+    fab: `<button class="fab" data-act="newDM">${IC('msg')}</button>`
   };
 };
 
@@ -1054,21 +1232,24 @@ VIEWS.chat = () => {
     const d = ymd(new Date(m.ts)); const sep = d !== lastDay ? `<div class="daysep"><span>${fmtDate(d)}</span></div>` : ''; lastDay = d;
     if (m.type === 'sys') return sep + `<div class="msg sys ${m.urgent ? 'urgent' : ''}" ${m.link ? `data-act="link" data-link="${esc(m.link)}" style="cursor:pointer"` : ''}>${esc(m.text)}<div class="tm" style="text-align:center">${esc(uname(m.by))} • ${fmtTime(m.ts)}</div></div>`;
     const mine = m.by === me.id;
-    return sep + `<div class="msg ${mine ? 'me' : 'ot'}">${!mine && isG ? `<div class="who">${esc(uname(m.by))}</div>` : ''}${m.text ? esc(m.text) : ''}${attHTML(m)}<div class="tm">${fmtTime(m.ts)}</div></div>`;
+    return sep + `<div class="msg ${mine ? 'me' : 'ot'}" data-key="${esc(m.id || m.ts)}">${!mine && isG ? `<div class="who">${esc(uname(m.by))}</div>` : ''}${attHTML(m)}${m.text ? esc(m.text) : ''}<span class="tm">${fmtTime(m.ts)}</span></div>`;
   }).join('');
   const sub = isG ? (groupMembers(g).length + ' أعضاء + المدير والإدارة والمتابعة') : roleLabel(user(other));
   return {
     title: isG ? 'محادثة ' + gName(g) : uname(other), sub, back: true, chat: true,
-    actions: isG ? `<button class="ib" data-act="go" data-v="group" data-g="${g}">📋</button>` : '',
+    avatar: `<div class="hav">${isG ? IC('groups') : esc(initials(uname(other)))}</div>`,
+    actions: isG ? `<button class="ib" data-act="go" data-v="group" data-g="${g}">${IC('info')}</button>` : '',
     html: `<div class="msgs" id="msgs">${body || '<div class="empty">ابدأ المحادثة…</div>'}</div>
       ${attChip(target)}
-      ${Rec.mr ? `<div class="recbar"><span>🔴 جارِ التسجيل</span><span id="rectime">0:00</span><span class="grow"></span><button class="btn gh sm" data-act="recCancel">إلغاء</button><button class="btn bad sm" data-act="recStop">إرسال ⏹</button></div>` : ''}
-      <div class="composer">
-        <label class="cb" title="إرفاق ملف">📎<input type="file" hidden data-attach="${esc(target)}"></label>
-        <label class="cb" title="صورة">📷<input type="file" accept="image/*" hidden data-attach="${esc(target)}"></label>
-        <textarea id="mtext" rows="1" placeholder="اكتب رسالة…"></textarea>
-        <button class="cb ${Rec.mr ? 'rec' : ''}" data-act="${Rec.mr ? 'recStop' : 'recStart'}" data-target="${esc(target)}" title="رسالة صوتية">🎤</button>
-        <button class="cb send" data-act="sendMsg" data-target="${esc(target)}">➤</button>
+      <div class="composer ${Rec.mr ? 'recording' : ''}" id="composer">
+        <div class="cpill">
+          <label class="cb" title="إرفاق ملف">${IC('clip')}<input type="file" hidden data-attach="${esc(target)}"></label>
+          <textarea id="mtext" rows="1" placeholder="رسالة"></textarea>
+          <label class="cb cam" title="صورة">${IC('cam')}<input type="file" accept="image/*" hidden data-attach="${esc(target)}"></label>
+        </div>
+        <div class="recui"><span class="rdot"></span><span id="rectime">0:00</span><span class="grow"></span><span class="rhint">‹ اسحب للإلغاء</span></div>
+        <button class="cbig mic ${Rec.mr ? 'rec' : ''}" data-hold="rec" data-target="${esc(target)}" title="اضغط مطولاً لتسجيل بصمة صوتية">${IC('mic')}</button>
+        <button class="cbig send" data-act="sendMsg" data-target="${esc(target)}">${IC('send')}</button>
       </div>`
   };
 };
@@ -1265,9 +1446,11 @@ A.enableNotif = async () => {
   const p = await Notification.requestPermission(); toast(p === 'granted' ? 'تم تفعيل التنبيهات ✓' : 'لم يتم السماح بالتنبيهات');
 };
 A.logout = async () => { if (!(await ask('تسجيل الخروج؟'))) return; if (onDuty()) Geo.stop(); ls.del('dawam_session'); stopUserSubs(); S.me = null; S.view = 'home'; render(); };
-A.sendMsg = d => { const el = $('#mtext'); const text = el ? el.value : ''; const file = S.att[d.target]; if (el) el.value = ''; sendTo(d.target, text, file).catch(e => toast(e.message)); };
+A.sendMsg = d => { const el = $('#mtext'); const text = el ? el.value : ''; const file = S.att[d.target]; if (!text.trim() && !file) return; Snd.play('send'); if (el) { el.value = ''; el.style.height = ''; el.focus(); } syncComposer(); sendTo(d.target, text, file).catch(e => toast(e.message)); };
 A.sendComment = d => { const el = $('#ctext'); const text = el ? el.value : ''; const file = S.att[d.target]; if (!text.trim() && !file) return; if (el) el.value = ''; sendTo(d.target, text, file).catch(e => toast(e.message)); };
 A.recStart = d => Rec.start(d.target);
+A.vnPlay = (d, el) => { const au = $('audio', el.closest('.vn')); if (!au) return; $$('.vn audio').forEach(a => { if (a !== au) a.pause(); }); if (au.paused) au.play().catch(() => toast('تعذر تشغيل الصوت')); else au.pause(); };
+A.vnSeek = (d, el, e) => { const au = $('audio', el.closest('.vn')); if (!au || !isFinite(au.duration)) return; const r = el.getBoundingClientRect(); let x = (e.clientX - r.left) / r.width; if (getComputedStyle(el).direction === 'rtl') x = 1 - x; au.currentTime = Math.max(0, Math.min(1, x)) * au.duration; };
 A.recStop = () => Rec.stop(false);
 A.recCancel = () => Rec.stop(true);
 
@@ -1587,8 +1770,32 @@ document.addEventListener('change', e => {
 document.addEventListener('input', e => {
   if (e.target.id === 'dmq') { const q = e.target.value.trim(); $$('#modal .it').forEach(it => { it.style.display = it.textContent.includes(q) ? '' : 'none'; }); }
   if (e.target.id === 'docq') { S.params = {...S.params, q: e.target.value}; render(); }
-  if (e.target.id === 'mtext') { e.target.style.height = 'auto'; e.target.style.height = Math.min(110, e.target.scrollHeight) + 'px'; }
+  if (e.target.id === 'mtext') { e.target.style.height = 'auto'; e.target.style.height = Math.min(120, e.target.scrollHeight) + 'px'; syncComposer(); }
 });
+function syncComposer() { const c = $('#composer'), t = $('#mtext'); if (!c) return; const tgt = $('[data-act="sendMsg"]', c); const has = (t && t.value.trim()) || (tgt && S.att[tgt.dataset.target]); c.classList.toggle('typing', !!has); }
+/* البصمة الصوتية: اضغط مطولاً للتسجيل، ارفع إصبعك للإرسال، اسحب للإلغاء */
+const Hold = {on: false, t0: 0, x0: 0, cancel: false, released: false};
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('[data-hold="rec"]'); if (!b || Hold.on) return;
+  e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (er) {}
+  Hold.on = true; Hold.t0 = Date.now(); Hold.x0 = e.clientX; Hold.cancel = false; Hold.released = false;
+  buzz(25); Snd.play('tick');
+  Rec.start(b.dataset.target).then(() => { if (Hold.released && Rec.mr) Rec.stop(true); });
+});
+document.addEventListener('pointermove', e => {
+  if (!Hold.on) return; const dx = Math.abs(e.clientX - Hold.x0); const c = $('#composer');
+  Hold.cancel = dx > 110; if (c) c.classList.toggle('cancel', dx > 60);
+});
+const holdEnd = () => {
+  if (!Hold.on) return; Hold.on = false; Hold.released = true; const c = $('#composer'); if (c) c.classList.toggle('cancel', false);
+  const short = Date.now() - Hold.t0 < 600;
+  if (short) { if (Rec.mr) Rec.stop(true); toast('اضغط مطولاً على المايكروفون للتسجيل، وارفع إصبعك للإرسال', {ms: 2200}); return; }
+  if (Hold.cancel) { if (Rec.mr) Rec.stop(true); buzz([20, 40, 20]); return; }
+  if (Rec.mr) { Rec.stop(false); Snd.play('send'); buzz(15); }
+};
+document.addEventListener('pointerup', holdEnd);
+document.addEventListener('pointercancel', holdEnd);
+document.addEventListener('contextmenu', e => { if (e.target.closest('[data-hold]')) e.preventDefault(); });
 document.addEventListener('keydown', e => {
   if (e.target.id === 'mtext' && e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)) { e.preventDefault(); const b = $('[data-act="sendMsg"]'); if (b) b.click(); }
 });
