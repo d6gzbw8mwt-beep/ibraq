@@ -53,6 +53,7 @@ nav.bot button.on{color:var(--p);font-weight:700}
 .fab{position:fixed;bottom:calc(76px + env(safe-area-inset-bottom));left:18px;z-index:15;width:54px;height:54px;border-radius:50%;background:var(--a);color:#fff;border:0;font-size:26px;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}
 @media(min-width:760px){.fab{left:calc(50% - 340px)}}
 .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:600;background:var(--pl);color:var(--p);white-space:nowrap}
+.seg.rep{display:flex;gap:4px;flex-wrap:wrap;margin:0}.seg.rep label{flex:1;min-width:64px;text-align:center;padding:9px 4px;border-radius:10px;background:var(--bg,#f0f2f5);cursor:pointer;font-size:14px;border:1px solid transparent}.seg.rep label.on{background:var(--pl,#e6f2ea);color:var(--p);border-color:var(--p);font-weight:700}
 .tag.urgent{background:var(--badl);color:var(--bad)} .tag.directive{background:var(--al);color:var(--warn)}
 .tag.circular{background:#ede7f6;color:#5e35b1} .tag.done{background:var(--okl);color:var(--ok)}
 .tag.pend{background:#fff4d6;color:#8a6100} .tag.off{background:#eee;color:#777}
@@ -544,6 +545,7 @@ const actingMgr = u => isMgr(u) || isDeputy(u);
 const actor = () => S.me.name + (isDeputy(S.me) && !isMgr(S.me) ? ' (وكيل المدير)' : '');
 const inSec = (u, s) => !!u && u.type === 'morning' && u.section === s;
 const isDirector = u => !!u && u.role === 'director';
+const canSign = u => isMgr(u) || isDirector(u);
 /* صلاحية مخصصة لكل حساب يحددها الأدمن (مسموح / ممنوع)، وإلا تُطبَّق الصلاحية الافتراضية حسب القسم */
 const perm = (u, k, def) => { if (!u) return false; if (isDirector(u)) return false; const o = u.perms && u.perms[k]; return o === 'on' ? true : o === 'off' ? false : !!def; };
 const PERMS = {assign: 'إسناد المهام للوجبات', approve: 'تثبيت المهام والمرفوعات واتخاذ الإجراء', allGroups: 'الاطلاع على كل الوجبات ومحادثاتها', hr: 'أوليات وحسابات الموظفين', loc: 'مواقع الموظفين والحضور', reports: 'المواقف والبريد الصادر', urgent: 'إرسال العاجل والتوجيهات'};
@@ -896,6 +898,7 @@ async function signPdf(blob, pos, pages) {
 const isPdfF = o => /pdf/.test(o.fileType || '') || /\.pdf$/i.test(o.fileName || '');
 const signable = o => /^image\/(jpeg|png|webp)/.test(o.fileType || '') || isPdfF(o);
 function filesWithSign(files, ctx, can) {
+  can = can && canSign(S.me);
   return (files || []).filter(o => o && o.fileId).map(o => attHTML(o) + (can && signable(o) ? `<button class="btn sec sm" style="margin:4px 0 8px" data-act="signFile" data-ctx="${esc(ctx)}" data-fid="${esc(o.fileId)}" data-name="${esc(o.fileName)}" data-type="${esc(o.fileType)}">✍️ توقيع إلكتروني</button>` : '')).join('');
 }
 async function doSign(d, o) {
@@ -1121,7 +1124,8 @@ VIEWS.home = () => {
   const pendTasks = canApprove(me) ? S.tasks.filter(t => !t.approved).length : 0;
   const pendReq = S.requests.filter(r => canDecide(me, r)).length;
   const newReports = actingMgr(me) ? S.reports.filter(r => !(r.seenBy || []).includes(me.id)).length : 0;
-  const myOpen = me.type === 'shift' ? visibleTasks(me.group).filter(t => t.status !== 'done' && t.kind !== 'circular' && t.kind !== 'comment').length : 0;
+  const myOpen = me.type === 'shift' ? visibleTasks(me.group).filter(t => (!isRep(t) || occursOn(t, day)) && !tDone(t) && t.kind !== 'circular' && t.kind !== 'comment').length : 0;
+  const myToday = myTasksToday();
   const notifs = S.notifs.filter(n => notifFor(n, me)).sort((a, b) => b.ts - a.ts).slice(0, 8);
   const assigned = S.posts.filter(p => postAssignedToMe(p, me) && p.status !== 'done').sort((a, b) => b.ts - a.ts);
   const newPosts = canApprove(me) ? S.posts.filter(p => p.status === 'new' || (p.status !== 'done' && !(p.seenBy || []).includes(me.id) && !p.assignedTo)).sort((a, b) => b.ts - a.ts) : [];
@@ -1147,8 +1151,9 @@ VIEWS.home = () => {
       <p class="mu sm" style="margin:6px 0 0">${esc(dutyText(me))}</p>
       ${duty ? `<p class="sm" style="margin:4px 0 0;color:var(--ok)">${esc(Geo.status || 'الموقع يُشارَك مع الإدارة أثناء الدوام')}${Geo.last ? ' — آخر تحديث ' + ago(Geo.last.ts) : ''}</p>` : ''}
     </div>`}
-    ${isDeputy(me) && !isMgr(me) ? '<div class="notice info">أنت مكلّف حالياً بصلاحيات وكيل المدير: الاطلاع والتوجيه واتخاذ الإجراء والإحالة والتوقيع.</div>' : ''}
+    ${isDeputy(me) && !isMgr(me) ? '<div class="notice info">أنت مكلّف حالياً بصلاحيات وكيل المدير: الاطلاع والتوجيه واتخاذ الإجراء والإحالة.</div>' : ''}
     <div class="row" style="gap:8px;margin-bottom:12px">${stats.slice(0, 3).join('')}</div>
+    ${myToday.length ? `<div class="sec-title">📌 مطلوب منك اليوم (${myToday.length})</div>${myToday.map(taskCard).join('')}` : ''}
     ${assigned.length ? `<div class="sec-title">↪️ محال إليك لاتخاذ إجراء (${assigned.length})</div>${assigned.map(p => postCard(p)).join('')}` : ''}
     ${newPosts.length ? `<div class="sec-title">📤 مرفوعات الوجبات بانتظار اطلاعك (${newPosts.length})</div>${newPosts.slice(0, 6).map(p => postCard(p)).join('')}` : ''}
     <div class="card"><h3>آخر الإشعارات</h3>
@@ -1163,17 +1168,35 @@ function deputyCard() {
     <p class="mu sm" style="margin:6px 0 10px">${u ? 'الوكيل: <b>' + esc(u.name) + '</b> — يتخذ الإجراء ويوقّع بالوكالة عنك عند التفعيل' : 'لم تحدد وكيلاً بعد'}</p>
     <div class="row" style="gap:6px">${u ? `<button class="btn ${dp.active ? 'bad' : 'ok'} sm grow" data-act="toggleDeputy">${dp.active ? 'إطفاء الوكالة' : 'تفعيل الوكالة'}</button>` : ''}<button class="btn sec sm grow" data-act="pickDeputy">${u ? 'تغيير الوكيل' : 'اختيار وكيل'}</button></div></div>`;
 }
+const REP = {once: 'مرة واحدة', daily: 'يومياً', weekly: 'أسبوعياً', monthly: 'شهرياً'};
+const isRep = t => !!t.repeat && t.repeat !== 'once';
+const tStart = t => t.date || ymd(new Date(t.ts));
+function occursOn(t, day) {
+  if (!isRep(t)) return true;
+  const st = tStart(t); if (day < st) return false; if (t.until && day > t.until) return false;
+  const d = new Date(day + 'T12:00:00'), s0 = new Date(st + 'T12:00:00');
+  if (t.repeat === 'weekly') return d.getDay() === s0.getDay();
+  if (t.repeat === 'monthly') { const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); return d.getDate() === Math.min(s0.getDate(), last); }
+  return true;
+}
+const tDone = (t, day = dutyDay()) => isRep(t) ? !!(t.doneOn || {})[day] : t.status === 'done';
+const repLabel = t => !isRep(t) ? '' : REP[t.repeat] + (t.repeat === 'weekly' ? ' (كل ' + DAYS[new Date(tStart(t) + 'T12:00:00').getDay()] + ')' : t.repeat === 'monthly' ? ' (يوم ' + (+tStart(t).slice(8)) + ' من كل شهر)' : '') + (t.until ? ' حتى ' + fmtDate(t.until) : '');
+const tUsers = t => Array.isArray(t.users) ? t.users : [];
+const tTarget = t => tUsers(t).length ? tUsers(t).map(uname).slice(0, 3).join('، ') + (tUsers(t).length > 3 ? ` +${tUsers(t).length - 3}` : '') : +t.group === 0 ? 'كل الوجبات' : gName(+t.group);
+const taskInGroup = (t, g) => +t.group === +g || +t.group === 0 || tUsers(t).some(id => { const u = S.users.find(x => x.id === id); return u && u.type === 'shift' && +u.group === +g; });
+const taskSeen = (me, t) => (t.approved || canApprove(me) || t.by === me.id) && (!tUsers(t).length || tUsers(t).includes(me.id) || canAssign(me) || t.by === me.id);
 function visibleTasks(g) {
   const me = S.me;
-  return S.tasks.filter(t => (+t.group === +g || +t.group === 0) && (t.approved || canApprove(me) || t.by === me.id));
+  return S.tasks.filter(t => taskInGroup(t, g) && taskSeen(me, t));
 }
+const myTasksToday = () => { const me = S.me, day = dutyDay(); return S.tasks.filter(t => tUsers(t).includes(me.id) && t.approved && occursOn(t, day) && (isRep(t) || tStart(t) <= day) && !tDone(t, day)); };
 function taskCard(t) {
-  const me = S.me; const done = t.status === 'done';
+  const me = S.me; const done = tDone(t);
   return `<div class="card task ${esc(t.kind)} ${done ? 'isdone' : ''}" data-act="go" data-v="task" data-id="${esc(t.id)}">
-    <div class="row between wrap"><div class="row wrap" style="gap:5px"><span class="tag ${esc(t.kind)}">${esc(KINDS[t.kind] || t.kind)}</span>${t.pinned ? '<span class="tag">📌 مثبّت</span>' : ''}${!t.approved ? '<span class="tag pend">بانتظار التثبيت</span>' : ''}${done ? '<span class="tag done">✓ مكتملة</span>' : ''}${+t.group === 0 ? '<span class="tag off">كل الوجبات</span>' : ''}</div><span class="mu sm">${fmtDT(t.ts)}</span></div>
+    <div class="row between wrap"><div class="row wrap" style="gap:5px"><span class="tag ${esc(t.kind)}">${esc(KINDS[t.kind] || t.kind)}</span>${t.pinned ? '<span class="tag">📌 مثبّت</span>' : ''}${!t.approved ? '<span class="tag pend">بانتظار التثبيت</span>' : ''}${done ? `<span class="tag done">✓ ${isRep(t) ? 'أُنجزت اليوم' : 'مكتملة'}</span>` : ''}${isRep(t) ? `<span class="tag directive">🔁 ${esc(REP[t.repeat])}</span>` : ''}${+t.group === 0 && !tUsers(t).length ? '<span class="tag off">كل الوجبات</span>' : ''}${tUsers(t).length ? `<span class="tag off">👤 ${esc(tTarget(t))}</span>` : ''}</div><span class="mu sm">${fmtDT(t.ts)}</span></div>
     <div class="b" style="margin-top:6px">${esc(t.title)}</div>
     ${t.body ? `<div class="mu sm" style="white-space:pre-wrap;max-height:3.2em;overflow:hidden">${esc(t.body)}</div>` : ''}
-    <div class="row between" style="margin-top:6px"><span class="mu sm">من: ${esc(uname(t.by))}${t.date ? ' • ليوم ' + fmtDate(t.date) : ''}</span>${t.fileId ? '<span class="sm">📎</span>' : ''}</div>
+    <div class="row between" style="margin-top:6px"><span class="mu sm">من: ${esc(uname(t.by))}${isRep(t) ? ' • ' + esc(repLabel(t)) : t.date ? ' • ليوم ' + fmtDate(t.date) : ''}</span>${t.fileId ? '<span class="sm">📎</span>' : ''}</div>
     ${!t.approved && canApprove(me) ? `<div class="row" style="margin-top:8px"><button class="btn ok sm" data-act="approveTask" data-id="${esc(t.id)}">✓ تثبيت المهمة</button></div>` : ''}
   </div>`;
 }
@@ -1185,7 +1208,7 @@ VIEWS.groups = () => {
   return {
     title: 'الوجبات', sub: 'الوجبة المناوبة الآن: ' + gName(dg),
     html: GROUPS.map(g => {
-      const ts = visibleTasks(g); const open = ts.filter(t => t.status !== 'done' && !['circular', 'comment'].includes(t.kind)).length; const pend = ts.filter(t => !t.approved).length;
+      const ts = visibleTasks(g); const open = ts.filter(t => (!isRep(t) || occursOn(t, dutyDay())) && !tDone(t) && !['circular', 'comment'].includes(t.kind)).length; const pend = ts.filter(t => !t.approved).length;
       const nd = nextDuty(g); const c = S.chats.find(x => x.id === 'g' + g);
       return `<div class="card" data-act="go" data-v="group" data-g="${g}">
         <div class="row between"><div class="row"><div class="av g">${g}</div><div><div class="b">${gName(g)}</div><div class="mu sm">${groupMembers(g).map(u => esc(u.name)).join('، ') || 'بلا أعضاء'}</div></div></div>${g === dg ? '<span class="tag urgent">مناوبة الآن</span>' : `<span class="tag off">${nd ? (nd.inDays === 1 ? 'غداً' : 'بعد ' + nd.inDays + ' أيام') : ''}</span>`}</div>
@@ -1206,13 +1229,14 @@ function groupView(g, back) {
   const f = S.params.f || 'today';
   const today = dutyDay();
   let ts = visibleTasks(g);
-  if (f === 'today') ts = ts.filter(t => t.pinned || t.status !== 'done' || (t.date || ymd(new Date(t.ts))) === today || ymd(new Date(t.ts)) === today);
-  if (f === 'open') ts = ts.filter(t => t.status !== 'done' && !['circular', 'comment'].includes(t.kind));
+  if (f === 'today') ts = ts.filter(t => isRep(t) ? occursOn(t, today) : (t.date && t.date > today ? false : (t.pinned || t.status !== 'done' || tStart(t) === today || ymd(new Date(t.ts)) === today)));
+  if (f === 'open') ts = ts.filter(t => (!isRep(t) || occursOn(t, today)) && !tDone(t) && !['circular', 'comment'].includes(t.kind));
+  if (f === 'rep') ts = ts.filter(isRep);
   if (f === 'circ') ts = ts.filter(t => ['circular', 'directive'].includes(t.kind));
   if (f === 'pend') ts = ts.filter(t => !t.approved);
-  const rank = t => (t.status === 'done' ? 10 : 0) + (t.kind === 'urgent' ? -3 : 0) + (t.pinned ? -2 : 0) + (!t.approved ? -1 : 0);
+  const rank = t => (tDone(t) ? 10 : 0) + (t.kind === 'urgent' ? -3 : 0) + (t.pinned ? -2 : 0) + (!t.approved ? -1 : 0);
   ts.sort((a, b) => rank(a) - rank(b) || b.ts - a.ts);
-  const chips = [['today', 'اليوم'], ['open', 'المفتوحة'], ['circ', 'التعاميم والتوجيهات'], ['all', 'الكل']];
+  const chips = [['today', 'اليوم'], ['open', 'المفتوحة'], ['rep', '🔁 المتكررة'], ['circ', 'التعاميم والتوجيهات'], ['all', 'الكل']];
   if (canApprove(me)) chips.splice(1, 0, ['pend', 'بانتظار التثبيت']);
   const c = S.chats.find(x => x.id === 'g' + g); const unread = c && isUnread({id: 'g' + g, ...c});
   const isDuty = dutyGroup() === g; const nd = nextDuty(g);
@@ -1296,26 +1320,31 @@ async function addPostAction(id, act, patch = {}) {
 VIEWS.task = () => {
   const me = S.me; const t = S.tasks.find(x => x.id === S.params.id);
   if (!t) return {title: 'المهمة', back: true, html: '<div class="empty">المهمة غير موجودة أو حُذفت</div>'};
-  if (!(+t.group === 0 ? true : groupAccess(me, t.group))) return {title: 'غير مسموح', back: true, html: ''};
+  if (!(+t.group === 0 || tUsers(t).includes(me.id) || t.by === me.id || canAssign(me) || (+t.group > 0 && groupAccess(me, t.group)))) return {title: 'غير مسموح', back: true, html: ''};
   watchComments(t.id);
   const cs = (S.comments[t.id] || []).slice().sort((a, b) => a.ts - b.ts);
-  const done = t.status === 'done'; const target = 'task:' + t.id;
-  const canDone = !done && !['circular', 'comment'].includes(t.kind) && (me.type === 'shift' || canAssign(me));
+  const today = dutyDay(); const done = tDone(t, today); const target = 'task:' + t.id;
+  const dueToday = !isRep(t) || occursOn(t, today);
+  const canDone = !done && dueToday && !['circular', 'comment'].includes(t.kind) && (me.type === 'shift' || canAssign(me) || tUsers(t).includes(me.id));
+  const dn = isRep(t) ? (t.doneOn || {})[today] : (done ? {by: t.doneBy, ts: t.doneTs} : null);
+  const hist = isRep(t) ? Object.entries(t.doneOn || {}).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 10) : [];
   return {
-    title: KINDS[t.kind] || 'مهمة', sub: gName(+t.group), back: true,
+    title: KINDS[t.kind] || 'مهمة', sub: tTarget(t), back: true,
     html: `
     <div class="card task ${esc(t.kind)}">
-      <div class="row wrap" style="gap:5px"><span class="tag ${esc(t.kind)}">${esc(KINDS[t.kind])}</span>${t.pinned ? '<span class="tag">📌 مثبّت</span>' : ''}${!t.approved ? '<span class="tag pend">بانتظار التثبيت</span>' : ''}${done ? '<span class="tag done">✓ مكتملة</span>' : ''}</div>
+      <div class="row wrap" style="gap:5px"><span class="tag ${esc(t.kind)}">${esc(KINDS[t.kind])}</span>${t.pinned ? '<span class="tag">📌 مثبّت</span>' : ''}${!t.approved ? '<span class="tag pend">بانتظار التثبيت</span>' : ''}${done ? `<span class="tag done">✓ ${isRep(t) ? 'أُنجزت اليوم' : 'مكتملة'}</span>` : ''}${isRep(t) ? `<span class="tag directive">🔁 ${esc(REP[t.repeat])}</span>` : ''}</div>
       <h3 style="margin-top:8px;font-size:17px">${esc(t.title)}</h3>
       ${t.body ? `<div style="white-space:pre-wrap">${esc(t.body)}</div>` : ''}
       ${attHTML(t)}
       <div class="mu sm" style="margin-top:8px">أضافها ${esc(uname(t.by))} • ${fmtDT(t.ts)}${t.date ? ' • ليوم ' + fmtDate(t.date) : ''}${t.approvedBy ? ' • ثبّتها ' + esc(uname(t.approvedBy)) : ''}</div>
-      ${done ? `<div class="notice" style="background:var(--okl);color:var(--ok);margin:10px 0 0">أكملها ${esc(uname(t.doneBy))} • ${fmtDT(t.doneTs)}</div>` : ''}
+      <div class="sm" style="margin-top:6px"><span class="mu">إلى:</span> ${esc(tTarget(t))}${isRep(t) ? ` • <span class="mu">التكرار:</span> ${esc(repLabel(t))}${!dueToday ? ' • <span class="mu">ليس موعدها اليوم</span>' : ''}` : ''}</div>
+      ${dn ? `<div class="notice" style="background:var(--okl);color:var(--ok);margin:10px 0 0">${isRep(t) ? 'أُنجزت اليوم من ' : 'أكملها '}${esc(uname(dn.by))} • ${fmtDT(dn.ts)}</div>` : ''}
+      ${hist.length ? `<details style="margin-top:8px"><summary class="sm mu">سجل الإنجاز (${Object.keys(t.doneOn || {}).length})</summary>${hist.map(([d, x]) => `<div class="sm" style="padding:3px 0">${fmtDate(d)} — ${esc(uname(x.by))}</div>`).join('')}</details>` : ''}
       <div class="row wrap" style="margin-top:12px;gap:6px">
         ${canDone ? `<button class="btn ok sm" data-act="completeTask" data-id="${esc(t.id)}">✓ إكمال المهمة</button>` : ''}
         ${!t.approved && canApprove(me) ? `<button class="btn ok sm" data-act="approveTask" data-id="${esc(t.id)}">تثبيت</button>` : ''}
         ${canApprove(me) ? `<button class="btn sec sm" data-act="pinTask" data-id="${esc(t.id)}">${t.pinned ? 'إلغاء التثبيت أعلى الجدول' : '📌 تثبيت أعلى الجدول'}</button>` : ''}
-        ${done && canAssign(me) ? `<button class="btn gh sm" data-act="reopenTask" data-id="${esc(t.id)}">إعادة فتح</button>` : ''}
+        ${done && (canAssign(me) || (isRep(t) && dn && dn.by === me.id)) ? `<button class="btn gh sm" data-act="reopenTask" data-id="${esc(t.id)}">إعادة فتح</button>` : ''}
         ${t.by === me.id || isMgr(me) ? `<button class="btn gh sm" style="color:var(--bad)" data-act="delTask" data-id="${esc(t.id)}">حذف</button>` : ''}
       </div>
     </div>
@@ -1370,7 +1399,7 @@ VIEWS.chat = () => {
     const d = ymd(new Date(m.ts)); const sep = d !== lastDay ? `<div class="daysep"><span>${fmtDate(d)}</span></div>` : ''; lastDay = d;
     if (m.type === 'sys') return sep + `<div class="msg sys ${m.urgent ? 'urgent' : ''}" ${m.link ? `data-act="link" data-link="${esc(m.link)}" style="cursor:pointer"` : ''}>${esc(m.text)}<div class="tm" style="text-align:center">${esc(uname(m.by))} • ${fmtTime(m.ts)}</div></div>`;
     const mine = m.by === me.id;
-    const sg = !mine && m.fileId && signable(m) ? `<button class="sgbtn" data-act="signFile" data-ctx="chat:${esc(id)}" data-fid="${esc(m.fileId)}" data-name="${esc(m.fileName)}" data-type="${esc(m.fileType)}">${IC('pen')} وقّع وأرجِعه</button>` : '';
+    const sg = !mine && m.fileId && signable(m) && canSign(S.me) ? `<button class="sgbtn" data-act="signFile" data-ctx="chat:${esc(id)}" data-fid="${esc(m.fileId)}" data-name="${esc(m.fileName)}" data-type="${esc(m.fileType)}">${IC('pen')} وقّع وأرجِعه</button>` : '';
     const fw = m.fwd ? `<div class="fwd">${IC('fwd')} ${m.directive ? 'توجيه' : 'محوّلة'}${m.fwdFrom ? ' • من ' + esc(m.fwdFrom) : ''}</div>` : '';
     const dv = m.directive ? `<div class="dir"><b>📌 التوجيه:</b> ${esc(m.directive)}</div>` : '';
     const qt = m.replyTo ? `<div class="quote" data-act="jumpTo" data-mid="${esc(m.replyTo.id)}"><b>${m.replyTo.by === me.id ? 'أنت' : esc(uname(m.replyTo.by))}</b>${esc(m.replyTo.text || '')}</div>` : '';
@@ -1435,7 +1464,7 @@ VIEWS.more = () => {
   items.push(['roster', '🗓️', 'جدول المناوبات', 'دورة 24 ساعة عمل / 72 ساعة استراحة', {}]);
   if (isMgr(me) || canHR(me)) items.push(['users', '👤', 'الحسابات والأقسام', isMgr(me) ? 'إضافة وغلق الحسابات وتغيير كلمات المرور' : 'عرض الموظفين', {}]);
   if (isMgr(me)) items.push(['settings', '⚙️', 'الإعدادات', 'المناوبة، أوقات الدوام، وكيل المدير، الأقسام', {}]);
-  items.push(['profile', '🔑', 'حسابي وتوقيعي', 'كلمة المرور والتوقيع الإلكتروني', {}]);
+  items.push(['profile', '🔑', canSign(me) ? 'حسابي وتوقيعي' : 'حسابي', canSign(me) ? 'كلمة المرور والتوقيع الإلكتروني' : 'تغيير كلمة المرور', {}]);
   return {
     title: 'المزيد', sub: me.name,
     html: `<div class="card list" style="padding:4px 12px">${items.map(([v, i, t, d, p]) => `<div class="it" data-act="go" data-v="${v}" ${p.u ? `data-u="${esc(p.u)}"` : ''}><div class="av g" style="background:var(--pl)">${i}</div><div class="grow"><b>${t}</b>${d ? `<div class="mu sm">${d}</div>` : ''}</div><span class="mu">‹</span></div>`).join('')}</div>
@@ -1566,10 +1595,10 @@ VIEWS.profile = () => {
   const me = S.me;
   return {title: 'حسابي', back: true,
     html: `<div class="card"><div class="row"><div class="av">${esc(initials(me.name))}</div><div><b>${esc(me.name)}</b><div class="mu sm">${esc(roleLabel(me))}</div><div class="mu sm" dir="ltr" style="text-align:right">${esc(me.username)}</div></div></div></div>
-    <div class="card"><h3>توقيعي الإلكتروني</h3>
+    ${canSign(me) ? `<div class="card"><h3>توقيعي الإلكتروني</h3>
       ${me.sigFileId ? `<div class="att" style="background:#fff;border:1px solid var(--bd);border-radius:12px;padding:8px;text-align:center"><img data-fid="${esc(me.sigFileId)}" data-k="image" alt="" style="max-height:120px;margin:auto"></div>` : '<p class="mu sm">لم ترسم توقيعك بعد.</p>'}
       <button class="btn sec full" style="margin-top:10px" data-act="drawSig">${me.sigFileId ? 'إعادة رسم التوقيع' : '✍️ رسم توقيعي'}</button>
-      <p class="mu sm" style="margin-bottom:0">كل توقيع يتطلب التحقق ببصمة الإصبع أو الوجه أو رمز قفل الهاتف.</p></div>
+      <p class="mu sm" style="margin-bottom:0">كل توقيع يتطلب التحقق ببصمة الإصبع أو الوجه أو رمز قفل الهاتف.</p></div>` : ''}
     <form class="card" id="pwForm"><h3>تغيير كلمة المرور</h3>
       <label class="f">كلمة المرور الحالية</label><input class="in" type="password" name="old" required dir="ltr">
       <label class="f">كلمة المرور الجديدة</label><input class="in" type="password" name="n1" required minlength="4" dir="ltr">
@@ -1703,22 +1732,24 @@ A.postForward = d => {
 A.delPost = async d => { if (!(await ask('حذف هذا المرفوع نهائياً؟'))) return; await B.del('posts', d.id); goBack(); };
 A.approveTask = async d => { const t = S.tasks.find(x => x.id === d.id); await B.update('tasks', d.id, {approved: true, approvedBy: S.me.id, approvedTs: now()}); if (t) await announceTask(t, true); toast('تم تثبيت المهمة'); };
 A.pinTask = async d => { const t = S.tasks.find(x => x.id === d.id); await B.update('tasks', d.id, {pinned: !t.pinned}); };
-A.reopenTask = async d => { await B.update('tasks', d.id, {status: 'open', doneBy: null, doneTs: null}); };
+A.reopenTask = async d => { const t = S.tasks.find(x => x.id === d.id); if (t && isRep(t)) { const o = {...(t.doneOn || {})}; delete o[dutyDay()]; await B.update('tasks', d.id, {doneOn: o}); return; } await B.update('tasks', d.id, {status: 'open', doneBy: null, doneTs: null}); };
 A.delTask = async d => { if (!(await ask('حذف المهمة نهائياً؟'))) return; await B.del('tasks', d.id); A.back(); };
 A.completeTask = d => {
   const t = S.tasks.find(x => x.id === d.id);
   openModal('إكمال المهمة', `<p class="mu sm">${esc(t.title)}</p><label class="f">ملاحظة الإنجاز (اختياري)</label><textarea class="in" name="text"></textarea><label class="f">إرفاق صورة أو ملف (اختياري)</label><input class="in" type="file" name="file">`, async fd => {
     const file = fd.get('file'); const att = file && file.size ? await uploadAtt(file) : {};
     await B.add('taskComments', {taskId: t.id, by: S.me.id, text: fd.get('text') || '', done: true, ...att, ts: now()});
-    await B.update('tasks', t.id, {status: 'done', doneBy: S.me.id, doneTs: now()});
+    if (isRep(t)) await B.update('tasks', t.id, {doneOn: {...(t.doneOn || {}), [dutyDay()]: {by: S.me.id, ts: now()}}});
+    else await B.update('tasks', t.id, {status: 'done', doneBy: S.me.id, doneTs: now()});
     if (t.by !== S.me.id) await notify('u:' + t.by, `${S.me.name} أكمل المهمة: ${t.title}`, {link: 'task:' + t.id});
     toast('تم إكمال المهمة ✓');
   }, 'تأكيد الإكمال');
 };
 async function announceTask(t, approved) {
   // إشعار مباشر في كروب الوجبة + رسالة نظام في المحادثة
+  const label = (KINDS[t.kind] || 'مهمة') + (isRep(t) ? ' (' + REP[t.repeat] + ')' : ''); const urgent = t.kind === 'urgent';
+  if (tUsers(t).length) { for (const id of tUsers(t)) if (id !== S.me.id) await notify('u:' + id, `${label} جديد${urgent ? ' ⚠️' : ''}: ${t.title}`, {link: 'task:' + t.id, urgent}); return; }
   const groups = +t.group === 0 ? GROUPS : [+t.group];
-  const label = KINDS[t.kind] || 'مهمة'; const urgent = t.kind === 'urgent';
   for (const g of groups) {
     await B.add('messages', {chatId: 'g' + g, by: S.me.id, type: 'sys', text: `${urgent ? '⚠️ ' : '📌 '}${label}: ${t.title}`, urgent, link: 'task:' + t.id, ts: now()});
     await B.merge('chats', 'g' + g, {group: g, lastTs: now(), lastText: `${label}: ${t.title}`.slice(0, 80), lastBy: S.me.id, sys: true});
@@ -1729,21 +1760,46 @@ A.newTask = d => {
   const me = S.me; const ks = kindsFor(me);
   openModal('إضافة إلى جدول المهام', `
     <label class="f">النوع</label><select class="in" name="kind">${ks.map(k => `<option value="${k}">${KINDS[k]}</option>`).join('')}</select>
-    <label class="f">إلى</label><select class="in" name="group"><option value="${+d.g}">${gName(+d.g)}</option>${GROUPS.filter(g => g !== +d.g).map(g => `<option value="${g}">${gName(g)}</option>`).join('')}<option value="0">كل الوجبات</option></select>
+    <label class="f">إلى</label><select class="in" name="group" id="tgroup">${d.g ? `<option value="${+d.g}">${gName(+d.g)}</option>` : ''}${GROUPS.filter(g => g !== +d.g).map(g => `<option value="${g}">${gName(g)}</option>`).join('')}<option value="0">كل الوجبات</option><option value="u">👤 موظفين محددين…</option></select>
+    <div id="tusers" class="tpick list" style="display:none;max-height:260px">${userPickRows()}</div>
     <label class="f">العنوان</label><input class="in" name="title" required maxlength="160">
     <label class="f">التفاصيل</label><textarea class="in" name="body"></textarea>
-    <label class="f">لتاريخ مناوبة</label><input class="in" type="date" name="date" value="${dutyDay()}">
+    <label class="f">يظهر</label><div class="seg rep">${Object.entries(REP).map(([k, l], i) => `<label><input type="radio" name="repeat" value="${k}" ${i === 0 ? 'checked' : ''} hidden><span>${l}</span></label>`).join('')}</div>
+    <label class="f" id="tdatel">لتاريخ مناوبة</label><input class="in" type="date" name="date" value="${dutyDay()}">
+    <div id="tuntil" style="display:none"><label class="f">ينتهي التكرار في (اختياري)</label><input class="in" type="date" name="until"><p class="mu sm" id="trephint"></p></div>
     <label class="f">مرفق (صورة / PDF / أي ملف)</label><input class="in" type="file" name="file">
     ${canApprove(me) ? '<label class="chk"><input type="checkbox" name="pinned"> تثبيت أعلى جدول الوجبة</label>' : '<p class="mu sm">ستظهر للوجبة بعد تثبيتها من المدير أو قسم المتابعة.</p>'}`, async fd => {
     const file = fd.get('file'); const att = file && file.size ? await uploadAtt(file) : {};
-    const t = {group: +fd.get('group'), kind: fd.get('kind'), title: fd.get('title').trim(), body: fd.get('body').trim(), date: fd.get('date'), by: me.id, ts: now(), status: 'open', approved: canApprove(me), pinned: !!fd.get('pinned') || fd.get('kind') === 'urgent', ...att};
+    const gsel = fd.get('group'); const users = gsel === 'u' ? fd.getAll('tu') : [];
+    if (gsel === 'u' && !users.length) throw new Error('اختر موظفاً واحداً على الأقل');
+    const repeat = fd.get('repeat') || 'once';
+    const t = {group: gsel === 'u' ? -1 : +gsel, kind: fd.get('kind'), repeat, ...(users.length ? {users} : {}), ...(repeat !== 'once' && fd.get('until') ? {until: fd.get('until')} : {}), title: fd.get('title').trim(), body: fd.get('body').trim(), date: fd.get('date'), by: me.id, ts: now(), status: 'open', approved: canApprove(me), pinned: !!fd.get('pinned') || fd.get('kind') === 'urgent', ...att};
     if (t.approved) t.approvedBy = me.id;
     const id = await B.add('tasks', t);
     if (t.approved) await announceTask({...t, id}, true);
     else await notify('sec:followup', `مهمة بانتظار التثبيت: ${t.title}`, {link: 'task:' + id});
-    toast(t.approved ? 'تمت الإضافة وإشعار الوجبة' : 'تمت الإضافة — بانتظار التثبيت');
+    toast(t.approved ? (users.length ? 'تمت الإضافة وإشعار الموظفين' : 'تمت الإضافة وإشعار الوجبة') : 'تمت الإضافة — بانتظار التثبيت');
   }, 'إضافة');
+  wireTaskForm();
 };
+function userPickRows(name = 'tu') {
+  const me = S.me; const us = S.users.filter(u => u.active !== false && u.id !== me.id);
+  const grp = [...GROUPS.map(g => [gName(g), us.filter(u => u.type === 'shift' && +u.group === g)]), ['الأقسام والإدارة', us.filter(u => u.type !== 'shift')]].filter(x => x[1].length);
+  return grp.map(([title, list]) => `<div class="sec-title" style="margin:8px 4px 2px">${esc(title)}</div>` + list.sort((a, b) => a.name.localeCompare(b.name, 'ar')).map(u => `<label><input type="checkbox" name="${name}" value="${esc(u.id)}"><div class="av">${esc(initials(u.name))}</div><div class="grow"><b>${esc(u.name)}</b><div class="mu sm">${esc(roleLabel(u))}</div></div></label>`).join('')).join('');
+}
+function wireTaskForm() {
+  const f = $('#mform'); if (!f) return;
+  const upd = () => {
+    const g = f.querySelector('#tgroup'); const tu = f.querySelector('#tusers'); if (g && tu) tu.style.display = g.value === 'u' ? '' : 'none';
+    const r = (f.querySelector('input[name=repeat]:checked') || {}).value || 'once';
+    f.querySelectorAll('.seg.rep label').forEach(l => l.classList.toggle('on', l.querySelector('input').checked));
+    const un = f.querySelector('#tuntil'); if (un) un.style.display = r === 'once' ? 'none' : '';
+    const dl = f.querySelector('#tdatel'); if (dl) dl.textContent = r === 'once' ? 'لتاريخ مناوبة' : 'يبدأ من تاريخ';
+    const dv = (f.querySelector('input[name=date]') || {}).value; const h = f.querySelector('#trephint');
+    if (h && dv) { const d = new Date(dv + 'T12:00:00'); h.textContent = r === 'daily' ? 'يظهر بجدول المهام كل يوم.' : r === 'weekly' ? `يظهر كل ${DAYS[d.getDay()]}.` : r === 'monthly' ? `يظهر يوم ${d.getDate()} من كل شهر.` : ''; }
+  };
+  f.addEventListener('change', upd); f.addEventListener('input', upd); upd();
+}
 A.newDM = () => {
   const me = S.me; const us = S.users.filter(u => u.id !== me.id && u.active !== false).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
   openModal('مراسلة موظف', `<input class="in" id="dmq" placeholder="بحث…">
@@ -1884,15 +1940,25 @@ A.fwdPick = d => {
   const people = S.users.filter(u => u.id !== me.id && u.active !== false && !have.has(dmId(me.id, u.id))).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
   const row = (id, name, sub, av) => `<label><input type="checkbox" name="t" value="${esc(id)}"><div class="av">${av}</div><div class="grow"><b>${esc(name)}</b>${sub ? `<div class="mu sm">${esc(sub)}</div>` : ''}</div></label>`;
   openModal(dir ? 'توجيه إلى…' : 'تحويل إلى…', `
-    ${dir ? `<label class="f">نص التوجيه</label><textarea class="in" name="dir" required placeholder="اكتب التوجيه اللازم…"></textarea>` : ''}
+    ${dir ? `<label class="f">نص التوجيه</label><textarea class="in" name="dir" required placeholder="اكتب التوجيه اللازم…"></textarea>
+    ${canAssign(me) ? `<label class="f">يظهر بجدول المهام</label><div class="seg rep">${[['none', 'لا'], ...Object.entries(REP)].map(([k, l], i) => `<label><input type="radio" name="repeat" value="${k}" ${i === 0 ? 'checked' : ''} hidden><span>${l}</span></label>`).join('')}</div>` : ''}` : ''}
     <input class="in" id="dmq" placeholder="بحث…" style="margin-top:8px">
     <div class="tpick list">${chats.map(c => row(c.id, c.name, c.group ? 'محادثة جماعية' : roleLabel(user(c.other)), c.group ? IC('groups') : esc(initials(c.name)))).join('')}
     ${people.map(u => row(dmId(me.id, u.id), u.name, roleLabel(u), esc(initials(u.name)))).join('')}</div>`, async fd => {
     const ts = fd.getAll('t'); if (!ts.length) throw new Error('اختر محادثة واحدة على الأقل');
     const dtext = dir ? (fd.get('dir') || '').trim() : ''; if (dir && !dtext) throw new Error('اكتب نص التوجيه');
     for (const t of ts) await forwardTo(t, m, dtext);
+    const rp = dir ? fd.get('repeat') : null;
+    if (rp && rp !== 'none') {
+      const keep = ['fileId', 'fileName', 'fileType', 'fileSize']; const att = {}; keep.forEach(k => { if (m[k] != null) att[k] = m[k]; });
+      const base = {kind: 'directive', title: dtext.slice(0, 160), body: m.text || '', date: dutyDay(), repeat: rp, by: me.id, ts: now(), status: 'open', approved: true, approvedBy: me.id, ...att};
+      const users = [];
+      for (const c of ts) { if (c.startsWith('dm_')) { const o = c.slice(3).split('__').find(x => x !== me.id); if (o) users.push(o); } else { const g = +c.slice(1); if (GROUPS.includes(g)) { const id = await B.add('tasks', {...base, group: g}); await announceTask({...base, group: g, id}, true); } } }
+      if (users.length) { const id = await B.add('tasks', {...base, group: -1, users}); await announceTask({...base, group: -1, users, id}, true); }
+    }
     Snd.play('send'); toast(ts.length > 1 ? `تم الإرسال إلى ${ts.length} محادثات` : 'تم الإرسال');
   }, dir ? 'إرسال التوجيه' : 'تحويل');
+  if (dir) wireTaskForm();
 };
 async function forwardTo(chatId, m, dtext) {
   const me = S.me; if (!chatAccess(chatId)) throw new Error('لا تملك صلاحية لهذه المحادثة');
@@ -2061,6 +2127,7 @@ A.drawSig = () => {
 };
 A.sigClear = () => { const c = $('#sigpad'); c.getContext('2d').clearRect(0, 0, c.width, c.height); c._drawn = false; };
 A.signFile = d => {
+  if (!canSign(S.me)) return toast('التوقيع الإلكتروني متاح لمدير قسم الحركة والمدير فقط');
   if (!S.me.sigFileId) { toast('ارسم توقيعك أولاً ثم أعد المحاولة'); return A.drawSig(); }
   const pdf = isPdfF({fileType: d.type, fileName: d.name}); const data = {...d};
   openModal('توقيع: ' + d.name, `
