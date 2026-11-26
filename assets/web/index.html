@@ -173,7 +173,7 @@ input.in,select.in,textarea.in{border-radius:12px;padding:11px 13px;background:#
 .crow.unread .lt{color:var(--tx);font-weight:500}
 .ubadge{background:#25a85a;color:#fff;border-radius:12px;min-width:21px;height:21px;font-size:12px;font-weight:700;display:grid;place-items:center;padding:0 6px;flex:none}
 /* شاشة المحادثة */
-.msgs{background-color:#efeae2;background-image:radial-gradient(rgba(0,0,0,.035) 1.2px,transparent 1.3px);background-size:18px 18px;padding:10px 14px}
+.msgs{padding:10px 14px}
 .msg{position:relative;max-width:80%;margin:2px 0;padding:6px 9px 7px;border-radius:10px;box-shadow:0 1px .5px rgba(11,20,26,.13);font-size:15.5px;line-height:1.4}
 .msg.me{background:#d9fdd3;border-start-end-radius:2px;border-end-end-radius:10px}
 .msg.ot{border-start-start-radius:2px;border-end-start-radius:10px}
@@ -191,7 +191,7 @@ input.in,select.in,textarea.in{border-radius:12px;padding:11px 13px;background:#
 .msg.sys .tm{float:none;margin:4px 0 0}
 .msg.sys::before{display:none}
 .daysep span{background:#fff;color:#54656f;font-size:12.5px;padding:5px 12px;border-radius:8px;box-shadow:0 1px .5px rgba(11,20,26,.13)}
-.composer{background:transparent;border-top:0;padding:6px 8px calc(8px + env(safe-area-inset-bottom));gap:6px;align-items:flex-end;background:#efeae2}
+.composer{border-top:0;padding:6px 8px calc(8px + env(safe-area-inset-bottom));gap:6px;align-items:flex-end}
 .cpill{flex:1;display:flex;align-items:flex-end;background:#fff;border-radius:24px;padding:0 4px;box-shadow:0 1px .5px rgba(11,20,26,.13);min-height:48px}
 .cpill textarea{flex:1;border:0;background:transparent;padding:13px 6px;min-height:48px;max-height:120px;resize:none;outline:none;font-size:16px;line-height:1.35}
 .cpill .cb{background:transparent;color:#54656f;width:40px;height:48px;border-radius:50%}
@@ -237,6 +237,58 @@ input.in,select.in,textarea.in{border-radius:12px;padding:11px 13px;background:#
 .tpick label{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid var(--bd);cursor:pointer}
 .tpick input{width:20px;height:20px;accent-color:#1a9e4b}
 .msg{-webkit-user-select:text;user-select:text}
+/* شاشة المحادثة: ارتفاع ثابت مع الكيبورد وتمرير داخلي */
+body.chatmode{overflow:hidden;overscroll-behavior:none}
+body.chatmode #app{position:fixed;left:0;right:0;top:0;height:var(--vvh,100dvh);min-height:0;max-width:720px;margin:0 auto}
+body.chatmode header.top{position:relative;flex:none}
+body.chatmode main.chatmain{flex:1;min-height:0;height:auto;display:flex;flex-direction:column}
+.msgs{flex:1;min-height:0;background-color:var(--wall,#efeae2)}
+.msgs.pat{background-image:radial-gradient(rgba(0,0,0,.035) 1.2px,transparent 1.3px);background-size:18px 18px}
+.msgs.img{background-size:cover;background-position:center;background-attachment:local}
+.composer{flex:none;background:var(--wall,#efeae2)}
+.cpill textarea{overflow-y:auto;word-break:break-word;white-space:pre-wrap}
+header.top h1[data-act],header.top .hav[data-act]{cursor:pointer}
+/* الرد على رسالة */
+.quote{background:rgba(11,20,26,.06);border-inline-start:4px solid #1f8a70;border-radius:7px;padding:5px 9px;margin:0 -3px 5px;font-size:13.5px;cursor:pointer;max-height:62px;overflow:hidden}
+.msg.me .quote{background:rgba(11,80,30,.08)}
+.quote b{display:block;color:#1f8a70;font-size:13px}
+.replybar{display:flex;align-items:center;gap:8px;margin:0 8px;background:#fff;border-radius:14px 14px 0 0;padding:8px 10px 6px;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+.replybar .quote{flex:1;margin:0;cursor:default}
+.replybar .ib{color:#54656f;width:32px;height:32px}
+.msg.flash{animation:flash 1.2s}
+@keyframes flash{0%,60%{box-shadow:0 0 0 3px rgba(26,158,75,.5)}}
+/* معلومات الشخص */
+.cinfo{text-align:center;padding:18px 12px 14px}
+.cinfo .big{width:110px;height:110px;border-radius:50%;margin:0 auto 10px;background:var(--pl);color:var(--p);display:grid;place-items:center;font-size:38px;font-weight:700}
+.cinfo .big svg.ic{width:60px;height:60px}
+.cinfo h2{margin:0;font-size:22px}
+.cacts{display:flex;justify-content:center;gap:12px;margin-top:14px}
+.cacts a,.cacts button{display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--bd);background:#fff;border-radius:14px;padding:10px 16px;color:var(--p2);font-size:13px;text-decoration:none;cursor:pointer;min-width:84px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:11px 2px;border-bottom:1px solid var(--bd)}
+.kv:last-child{border-bottom:0}
+.kv span:first-child{color:var(--mu)}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.mgrid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;background:#eee;cursor:pointer}
+/* الخلفيات */
+.walls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.walls button{aspect-ratio:3/5;border-radius:10px;border:2px solid var(--bd);cursor:pointer}
+.walls button.on{border-color:#1a9e4b;box-shadow:0 0 0 2px #1a9e4b}
+/* محرر الصورة قبل الإرسال */
+.ied .vbody{align-items:center;position:relative;overflow:hidden;touch-action:none}
+.ied .stage{position:relative;direction:ltr}
+.ied .stage img{display:block;max-width:100vw;max-height:calc(var(--vvh,100dvh) - 150px);user-select:none;-webkit-user-drag:none}
+.ied .stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.ied .tx{position:absolute;transform:translate(-50%,-50%);font-weight:800;font-size:26px;line-height:1.2;padding:2px 6px;white-space:pre;text-shadow:0 1px 3px rgba(0,0,0,.45);cursor:move;touch-action:none;font-family:inherit}
+.ied .tools{display:flex;gap:4px;align-items:center}
+.ied .tools .ib.on{background:rgba(255,255,255,.22)}
+.ied .cols{display:flex;gap:8px;justify-content:center;padding:8px;background:rgba(11,20,26,.92)}
+.ied .cols button{width:28px;height:28px;border-radius:50%;border:2px solid #fff;cursor:pointer}
+.ied .cols button.on{transform:scale(1.25)}
+.ied .tin{display:none;padding:8px;background:rgba(11,20,26,.92)}
+.ied.typing .tin{display:flex;gap:8px}
+.ied .tin input{flex:1;border:0;border-radius:20px;padding:10px 14px;font-size:16px}
+.ied .ibot{display:flex;gap:8px;align-items:center;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:rgba(11,20,26,.92)}
+.ied .ibot input{flex:1;border:0;border-radius:24px;padding:12px 16px;font-size:16px;background:#1f2c33;color:#fff}
 /* سلاسة الحركة والتمرير */
 html{scroll-behavior:auto}
 button,.crow,.it,.chip,label.cb,.cbig,.fab,nav.bot button{touch-action:manipulation}
@@ -479,7 +531,7 @@ let B = null;
 const S = {
   ready: false, usersLoaded: false, me: null,
   users: [], settings: {}, tasks: [], posts: [], requests: [], notifs: [], reports: [], empdocs: [], locations: [], chats: [], attendance: [],
-  view: 'home', params: {}, att: {}, msgs: {}, comments: {}, subs: [], installEvt: null
+  view: 'home', params: {}, att: {}, reply: {}, msgs: {}, comments: {}, subs: [], installEvt: null
 };
 const user = id => S.users.find(u => u.id === id);
 const uname = id => (user(id) || {}).name || 'مستخدم';
@@ -903,7 +955,9 @@ async function sendTo(target, text, file) {
   try { if (file) { toast('جارِ رفع المرفق…', {ms: 2000}); att = await uploadAtt(file); } } catch (e) { return toast(e.message); }
   const me = S.me;
   if (kind === 'chat') {
-    await B.add('messages', {chatId: id, by: me.id, text, type: att.kind || 'text', ...att, ts: now()});
+    const rid = S.reply[id]; const rq = rid ? findMsg(id, rid) : null; if (rid) { delete S.reply[id]; render(); }
+    const rpl = rq ? {replyTo: {id: rq.id, by: rq.by, text: (rq.text || (rq.type === 'image' ? '📷 صورة' : rq.type === 'audio' ? '🎤 بصمة صوتية' : '📎 ' + (rq.fileName || 'ملف'))).slice(0, 140)}} : {};
+    await B.add('messages', {chatId: id, by: me.id, text, type: att.kind || 'text', ...att, ...rpl, ts: now()});
     const preview = text || (att.kind === 'image' ? '📷 صورة' : att.kind === 'audio' ? '🎤 رسالة صوتية' : '📎 ' + att.fileName);
     const chat = S.chats.find(c => c.id === id) || {};
     const data = {lastTs: now(), lastText: preview.slice(0, 80), lastBy: me.id, sys: false};
@@ -989,9 +1043,10 @@ function doRender() {
   const v = V();
   const html = `
     <header class="top">${v.back ? `<button class="ib" data-act="back">${IC('back')}</button>` : `<div class="hlogo"><img src="logo-mark.png" alt=""></div>`}${v.avatar || ''}
-      <h1>${esc(v.title)}${v.sub ? `<div class="sub">${esc(v.sub)}</div>` : ''}</h1>${v.actions || ''}</header>
+      <h1 ${v.titleAct || ''}>${esc(v.title)}${v.sub ? `<div class="sub">${esc(v.sub)}</div>` : ''}</h1>${v.actions || ''}</header>
     <main id="main" class="${v.chat ? 'chatmain' : ''}">${v.html}</main>
     ${v.chat ? '' : navHTML()}${v.fab || ''}`;
+  document.body.classList.toggle('chatmode', !!v.chat); setVVH();
   if (app.dataset.shell !== '1') { app.innerHTML = html; app.dataset.shell = '1'; } else morph(app, html);
   if (wasFresh) { const mn = $('#main'); if (mn) { mn.classList.remove('enter'); void mn.offsetWidth; mn.classList.add('enter'); } }
   Object.entries(keep).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
@@ -1318,20 +1373,23 @@ VIEWS.chat = () => {
     const sg = !mine && m.fileId && signable(m) ? `<button class="sgbtn" data-act="signFile" data-ctx="chat:${esc(id)}" data-fid="${esc(m.fileId)}" data-name="${esc(m.fileName)}" data-type="${esc(m.fileType)}">${IC('pen')} وقّع وأرجِعه</button>` : '';
     const fw = m.fwd ? `<div class="fwd">${IC('fwd')} ${m.directive ? 'توجيه' : 'محوّلة'}${m.fwdFrom ? ' • من ' + esc(m.fwdFrom) : ''}</div>` : '';
     const dv = m.directive ? `<div class="dir"><b>📌 التوجيه:</b> ${esc(m.directive)}</div>` : '';
-    return sep + `<div class="msg ${mine ? 'me' : 'ot'}" data-key="${esc(m.id || m.ts)}" data-mid="${esc(m.id || '')}" data-chat="${esc(id)}">${!mine && isG ? `<div class="who">${esc(uname(m.by))}</div>` : ''}${fw}${dv}${attHTML(m)}${m.text ? esc(m.text) : ''}${sg}<span class="tm">${fmtTime(m.ts)}</span></div>`;
+    const qt = m.replyTo ? `<div class="quote" data-act="jumpTo" data-mid="${esc(m.replyTo.id)}"><b>${m.replyTo.by === me.id ? 'أنت' : esc(uname(m.replyTo.by))}</b>${esc(m.replyTo.text || '')}</div>` : '';
+    return sep + `<div class="msg ${mine ? 'me' : 'ot'}" data-key="${esc(m.id || m.ts)}" data-mid="${esc(m.id || '')}" data-chat="${esc(id)}">${!mine && isG ? `<div class="who">${esc(uname(m.by))}</div>` : ''}${fw}${qt}${dv}${attHTML(m)}${m.text ? esc(m.text) : ''}${sg}<span class="tm">${fmtTime(m.ts)}</span></div>`;
   }).join('');
   const sub = isG ? (groupMembers(g).length + ' أعضاء + المدير والإدارة والمتابعة') : roleLabel(user(other));
   return {
     title: isG ? 'محادثة ' + gName(g) : uname(other), sub, back: true, chat: true,
-    avatar: `<div class="hav">${isG ? IC('groups') : esc(initials(uname(other)))}</div>`,
-    actions: isG ? `<button class="ib" data-act="go" data-v="group" data-g="${g}">${IC('info')}</button>` : '',
-    html: `<div class="msgs" id="msgs">${body || '<div class="empty">ابدأ المحادثة…</div>'}</div>
+    avatar: `<div class="hav" data-act="chatInfo" data-id="${esc(id)}">${isG ? IC('groups') : esc(initials(uname(other)))}</div>`,
+    titleAct: `data-act="chatInfo" data-id="${esc(id)}"`,
+    actions: `<button class="ib" data-act="chatMenu" data-id="${esc(id)}"><svg class="ic" viewBox="0 0 24 24"><path d="M12 8a2 2 0 1 0-2-2 2 2 0 0 0 2 2zm0 2a2 2 0 1 0 2 2 2 2 0 0 0-2-2zm0 6a2 2 0 1 0 2 2 2 2 0 0 0-2-2z"/></svg></button>`,
+    html: `<div class="msgs ${wallClass()}" id="msgs" style="${wallStyle()}">${body || '<div class="empty">ابدأ المحادثة…</div>'}</div>
       ${attChip(target)}
+      ${replyBar(id)}
       <div class="composer ${Rec.mr ? 'recording' : ''}" id="composer">
         <div class="cpill">
           <label class="cb" title="إرفاق ملف">${IC('clip')}<input type="file" hidden data-attach="${esc(target)}"></label>
           <textarea id="mtext" rows="1" placeholder="رسالة"></textarea>
-          <label class="cb cam" title="صورة">${IC('cam')}<input type="file" accept="image/*" hidden data-attach="${esc(target)}"></label>
+          <label class="cb cam" title="الكاميرا">${IC('cam')}<input type="file" accept="image/*" capture="environment" hidden data-attach="${esc(target)}"></label>
         </div>
         <div class="recui"><span class="rdot"></span><span id="rectime">0:00</span><span class="grow"></span><span class="rhint">‹ اسحب للإلغاء</span></div>
         <button class="cbig mic ${Rec.mr ? 'rec' : ''}" data-hold="rec" data-target="${esc(target)}" title="اضغط مطولاً لتسجيل بصمة صوتية">${IC('mic')}</button>
@@ -1692,11 +1750,127 @@ A.newDM = () => {
   <div class="list" style="margin-top:8px">${us.map(u => `<div class="it" data-act="startDM" data-id="${esc(u.id)}"><div class="av">${esc(initials(u.name))}</div><div class="grow"><b>${esc(u.name)}</b><div class="mu sm">${esc(roleLabel(u))}</div></div></div>`).join('')}</div>`, null);
 };
 A.startDM = d => { closeModal(); go('chat', {id: dmId(S.me.id, d.id)}); };
+/* ---------- ارتفاع الشاشة مع الكيبورد ---------- */
+function setVVH() {
+  const vv = window.visualViewport; const h = vv ? vv.height : window.innerHeight;
+  document.documentElement.style.setProperty('--vvh', h + 'px');
+  const app = $('#app'); if (app) app.style.top = (vv && document.body.classList.contains('chatmode')) ? vv.offsetTop + 'px' : '';
+}
+document.addEventListener('load', e => { const t = e.target; if (t && t.tagName === 'IMG') { const m = t.closest && t.closest('#msgs'); if (m && m.scrollHeight - m.scrollTop - m.clientHeight < t.offsetHeight + 200) m.scrollTop = m.scrollHeight; } }, true);
+if (window.visualViewport) { let lastH = 0; const onvv = () => { const m = $('#msgs'); const near = m && m.scrollHeight - m.scrollTop - m.clientHeight < 160; setVVH(); if (m && near && visualViewport.height !== lastH) m.scrollTop = m.scrollHeight; lastH = visualViewport.height; }; visualViewport.addEventListener('resize', onvv); visualViewport.addEventListener('scroll', onvv); }
+window.addEventListener('resize', setVVH);
+/* ---------- الرد على رسالة ---------- */
+function replyBar(chat) {
+  const mid = S.reply[chat]; const m = mid ? findMsg(chat, mid) : null; if (!m) return '';
+  const t = m.text || (m.type === 'image' ? '📷 صورة' : m.type === 'audio' ? '🎤 بصمة صوتية' : '📎 ' + (m.fileName || 'ملف'));
+  return `<div class="replybar"><div class="quote"><b>${m.by === S.me.id ? 'أنت' : esc(uname(m.by))}</b>${esc(t.slice(0, 140))}</div><button class="ib" data-act="cancelReply" data-chat="${esc(chat)}"><svg class="ic" viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg></button></div>`;
+}
+A.replyMsg = d => { closeModal(); S.reply[d.chat] = d.mid; render(); setTimeout(() => { const t = $('#mtext'); if (t) t.focus(); }, 60); };
+A.cancelReply = d => { delete S.reply[d.chat]; render(); };
+A.jumpTo = d => { const el = $(`.msg[data-mid="${CSS.escape(d.mid)}"]`); if (!el) return toast('الرسالة الأصلية غير ظاهرة'); el.scrollIntoView({block: 'center', behavior: 'smooth'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); };
+/* ---------- خلفية المحادثة ---------- */
+const WALLS = [['def', '#efeae2', 'pat'], ['w1', '#d9e9dc', 'pat'], ['w2', '#cfe3ef', ''], ['w3', '#f3e6cf', ''], ['w4', '#e8dff1', ''], ['w5', '#ffffff', ''], ['w6', '#0b141a', ''], ['w7', '#123c2a', 'pat']];
+const wallPref = () => ls.get('ibraq_wall', {k: 'def'});
+const wallClass = () => { const w = wallPref(); if (w.k === 'img') return 'img'; const d = WALLS.find(x => x[0] === w.k) || WALLS[0]; return d[2]; };
+const wallStyle = () => { const w = wallPref(); if (w.k === 'img' && w.img) return `--wall:#ccc;background-image:url(${w.img})`; const d = WALLS.find(x => x[0] === w.k) || WALLS[0]; return `--wall:${d[1]}`; };
+A.chatMenu = d => {
+  openModal('خيارات المحادثة', `<div class="msheet">
+    <button type="button" data-act="chatInfo" data-id="${esc(d.id)}">${IC('info')} ${d.id.startsWith('g') ? 'معلومات المجموعة' : 'معلومات جهة الاتصال'}</button>
+    <button type="button" data-act="wallPick">${IC('cam')} تغيير خلفية المحادثة</button>
+    ${d.id.startsWith('g') && groupAccess(S.me, +d.id.slice(1)) ? `<button type="button" data-act="go" data-v="group" data-g="${+d.id.slice(1)}">${IC('req')} مهام ومرفوعات الوجبة</button>` : ''}
+  </div>`, null);
+};
+A.wallPick = () => {
+  const cur = wallPref().k;
+  openModal('خلفية المحادثة', `<p class="mu sm">اختر خلفية لكل محادثاتك على هذا الجهاز.</p>
+    <div class="walls">${WALLS.map(([k, c, pt]) => `<button type="button" data-act="setWall" data-k="${k}" class="${cur === k ? 'on' : ''}" style="background-color:${c};${pt ? 'background-image:radial-gradient(rgba(0,0,0,.08) 1.2px,transparent 1.3px);background-size:10px 10px' : ''}"></button>`).join('')}</div>
+    <label class="btn sec full" style="margin-top:12px;cursor:pointer">🖼️ صورة من الجهاز<input type="file" accept="image/*" hidden id="wallimg"></label>`, null);
+  requestAnimationFrame(() => { const i = $('#wallimg'); if (i) i.onchange = async () => {
+    const f = i.files && i.files[0]; if (!f) return;
+    try { const img = await loadImg(URL.createObjectURL(f)); const sc = Math.min(1, 1100 / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = img.width * sc; c.height = img.height * sc; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      ls.set('ibraq_wall', {k: 'img', img: c.toDataURL('image/jpeg', 0.72)}); closeModal(); render(); toast('تم تغيير الخلفية'); } catch (e) { toast('تعذر استخدام الصورة'); } }; });
+};
+A.setWall = d => { ls.set('ibraq_wall', {k: d.k}); closeModal(); render(); };
+/* ---------- معلومات الشخص / المجموعة ---------- */
+A.chatInfo = d => { closeModal(); const id = d.id; if (id.startsWith('g')) go('contact', {g: +id.slice(1), id}); else go('contact', {u: id.slice(3).split('__').find(x => x !== S.me.id), id}); };
+A.openMedia = d => openFile(d.id);
+VIEWS.contact = () => {
+  const me = S.me; const p = S.params; const chat = p.id;
+  const media = (S.msgs[chat] || []).filter(m => m.fileId && m.type === 'image').sort((a, b) => b.ts - a.ts).slice(0, 30);
+  const files = (S.msgs[chat] || []).filter(m => m.fileId && m.type !== 'image' && m.type !== 'audio').sort((a, b) => b.ts - a.ts).slice(0, 15);
+  const mediaHTML = media.length || files.length ? `<div class="card"><h3>الوسائط والملفات</h3>${media.length ? `<div class="mgrid">${media.map(m => `<img data-fid="${esc(m.fileId)}" data-k="image" alt="">`).join('')}</div>` : ''}${files.map(m => attHTML(m)).join('')}</div>` : '';
+  if (p.g) {
+    const g = p.g; const mem = groupMembers(g); const others = S.users.filter(u => u.active !== false && !mem.includes(u) && groupAccess(u, g) && !isDirector(u));
+    const row = u => `<div class="it" data-act="go" data-v="contact" data-u="${esc(u.id)}" data-id="${esc(dmId(me.id, u.id))}"><div class="av">${esc(initials(u.name))}</div><div class="grow"><b>${esc(u.name)}${u.id === me.id ? ' (أنت)' : ''}</b><div class="mu sm">${esc(roleLabel(u))}</div></div></div>`;
+    return {title: 'معلومات المجموعة', back: true, html: `<div class="card cinfo"><div class="big">${IC('groups')}</div><h2>محادثة ${esc(gName(g))}</h2><div class="mu">مجموعة • ${mem.length + others.length} مشارك</div></div>
+      ${mediaHTML}
+      <div class="card list" style="padding:4px 12px"><div class="sec-title" style="margin:10px 2px 4px">أعضاء الوجبة (${mem.length})</div>${mem.map(row).join('') || '<div class="mu sm" style="padding:8px">لا يوجد</div>'}
+      <div class="sec-title" style="margin:10px 2px 4px">المدير والإدارة والمتابعة (${others.length})</div>${others.map(row).join('')}</div>`};
+  }
+  const u = user(p.u); if (!u) return {title: 'غير موجود', back: true, html: ''};
+  const kv = (k, v) => v ? `<div class="kv"><span>${k}</span><span class="b">${esc(v)}</span></div>` : '';
+  const dmid = dmId(me.id, u.id);
+  return {title: 'معلومات جهة الاتصال', back: true, html: `<div class="card cinfo"><div class="big">${esc(initials(u.name))}</div><h2>${esc(u.name)}</h2><div class="mu">${esc(roleLabel(u))}</div>
+      ${u.phone ? `<div style="margin-top:6px;direction:ltr" class="b">${esc(u.phone)}</div>` : ''}
+      <div class="cacts">${u.id !== me.id ? `<button type="button" data-act="go" data-v="chat" data-id="${esc(dmid)}">${IC('chat')}مراسلة</button>` : ''}${u.phone ? `<a href="tel:${esc(u.phone.replace(/[^0-9+]/g, ''))}">${IC('person')}اتصال</a>` : ''}</div></div>
+    <div class="card">${kv('العنوان الوظيفي', u.job)}${kv('نوع الحساب', isDirector(u) ? 'مدير أعلى' : isMgr(u) ? 'المدير' : 'موظف')}${kv('نوع الدوام', isDirector(u) ? '' : u.type === 'shift' ? 'مناوب (24/72)' : 'صباحي')}${kv('القسم', u.type === 'morning' && u.section ? sectionName(u.section) : '')}${kv('الوجبة', u.type === 'shift' ? gName(u.group) : '')}${kv('المسؤولية', u.head ? (u.type === 'shift' ? 'مسؤول الوجبة' : 'مسؤول القسم') : '')}${kv('اسم المستخدم', u.username)}${kv('الحالة', u.active === false ? 'الحساب مغلق' : 'فعّال')}</div>
+    ${chat === dmid ? mediaHTML : ''}`};
+};
+/* ---------- محرر الصورة قبل الإرسال (كتابة ورسم وتعليق) ---------- */
+function openImageEditor(file, target) {
+  const url = URL.createObjectURL(file);
+  const v = openViewer('', `<div class="stage"><img alt=""><canvas></canvas></div>`);
+  v.classList.add('ied');
+  const bar = $('.vbar', v); $('.vt', bar).innerHTML = `<div class="tools"><button class="ib" data-t="text" title="كتابة">Aa</button><button class="ib" data-t="pen" title="رسم">${IC('pen')}</button><button class="ib" data-t="undo" title="تراجع"><svg class="ic" viewBox="0 0 24 24"><path d="M12.5 8c-2.6 0-5 1-6.9 2.6L2 7v9h9l-3.6-3.6A8 8 0 0 1 20.1 16l2.4-.8A10.5 10.5 0 0 0 12.5 8z"/></svg></button></div>`;
+  $$('.vclose', bar).slice(1).forEach(b => b.remove());
+  const cols = ['#ffffff', '#000000', '#e53935', '#fdd835', '#43a047', '#1e88e5', '#8e24aa'];
+  v.insertAdjacentHTML('beforeend', `<div class="cols">${cols.map((c, i) => `<button style="background:${c}" data-c="${c}" class="${i === 0 ? 'on' : ''}"></button>`).join('')}</div>
+    <div class="tin"><input id="iedText" placeholder="اكتب النص…" dir="auto"><button class="cbig" id="iedTextOk">${IC('send')}</button></div>
+    <div class="ibot"><input id="iedCap" placeholder="أضف تعليقاً…" dir="auto"><button class="cbig" id="iedSend">${IC('send')}</button></div>`);
+  const img = $('.stage img', v), cv = $('.stage canvas', v), stage = $('.stage', v);
+  let color = '#ffffff', mode = '', hist = [];
+  img.onload = () => { cv.width = img.clientWidth * 2; cv.height = img.clientHeight * 2; };
+  img.src = url;
+  $$('.cols button', v).forEach(b => b.onclick = () => { color = b.dataset.c; $$('.cols button', v).forEach(x => x.classList.toggle('on', x === b)); });
+  const setMode = m => { mode = mode === m ? '' : m; $$('.tools .ib', v).forEach(b => b.classList.toggle('on', b.dataset.t === mode)); v.classList.toggle('typing', mode === 'text'); if (mode === 'text') { const i = $('#iedText'); i.value = ''; i.focus(); } };
+  $$('.tools .ib', v).forEach(b => b.onclick = () => {
+    if (b.dataset.t === 'undo') { const h = hist.pop(); if (!h) return; if (h.el) h.el.remove(); else if (h.img) cv.getContext('2d').putImageData(h.img, 0, 0); return; }
+    setMode(b.dataset.t);
+  });
+  const addText = () => {
+    const t = $('#iedText').value.trim(); setMode('text'); if (!t) return;
+    const el = document.createElement('div'); el.className = 'tx'; el.textContent = t; el.style.color = color; el.style.left = '50%'; el.style.top = '45%';
+    stage.appendChild(el); hist.push({el});
+    let sx, sy, ox, oy; el.onpointerdown = e => { e.stopPropagation(); el.setPointerCapture(e.pointerId); sx = e.clientX; sy = e.clientY; ox = el.offsetLeft; oy = el.offsetTop; };
+    el.onpointermove = e => { if (sx == null) return; el.style.left = (ox + e.clientX - sx) + 'px'; el.style.top = (oy + e.clientY - sy) + 'px'; };
+    el.onpointerup = () => { sx = null; };
+  };
+  $('#iedTextOk').onclick = addText; $('#iedText').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addText(); } };
+  let drawing = false; const ctx = cv.getContext('2d');
+  cv.onpointerdown = e => { if (mode !== 'pen') return; drawing = true; cv.setPointerCapture(e.pointerId); hist.push({img: ctx.getImageData(0, 0, cv.width, cv.height)}); const r = cv.getBoundingClientRect(); ctx.strokeStyle = color; ctx.lineWidth = 8; ctx.lineCap = ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo((e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height); };
+  cv.onpointermove = e => { if (!drawing) return; const r = cv.getBoundingClientRect(); ctx.lineTo((e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height); ctx.stroke(); };
+  cv.onpointerup = cv.onpointercancel = () => { drawing = false; };
+  $('#iedSend').onclick = async () => {
+    const btn = $('#iedSend'); btn.disabled = true;
+    try {
+      const W0 = img.naturalWidth, H0 = img.naturalHeight, sc = Math.min(1, 2000 / Math.max(W0, H0)); const W = Math.round(W0 * sc), H = Math.round(H0 * sc);
+      const out = document.createElement('canvas'); out.width = W; out.height = H; const o = out.getContext('2d');
+      o.fillStyle = '#fff'; o.fillRect(0, 0, W, H); o.drawImage(img, 0, 0, W, H); o.drawImage(cv, 0, 0, W, H);
+      const k = W / img.clientWidth;
+      $$('.tx', stage).forEach(el => { const fs = parseFloat(getComputedStyle(el).fontSize) * k; o.font = `800 ${fs}px ${getComputedStyle(document.body).fontFamily}`; o.textAlign = 'center'; o.textBaseline = 'middle'; o.shadowColor = 'rgba(0,0,0,.45)'; o.shadowBlur = 3 * k; o.fillStyle = el.style.color; o.fillText(el.textContent, el.offsetLeft * k, el.offsetTop * k); });
+      const blob = await canvasBlob(out, 'image/jpeg', 0.88);
+      const f = new File([blob], (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', {type: 'image/jpeg'});
+      const cap = $('#iedCap').value; closeViewer(); URL.revokeObjectURL(url); Snd.play('send');
+      await sendTo(target, cap, f);
+    } catch (e) { console.error(e); toast('تعذر تجهيز الصورة'); btn.disabled = false; }
+  };
+}
 /* تحويل وتوجيه الرسائل (مثل تطبيقات المحادثة) */
 const findMsg = (chat, mid) => (S.msgs[chat] || []).find(m => m.id === mid);
 function msgMenu(chat, mid) {
   const m = findMsg(chat, mid); if (!m || m.type === 'sys') return; buzz(20);
   openModal('الرسالة', `<div class="msheet">
+    <button type="button" data-act="replyMsg" data-chat="${esc(chat)}" data-mid="${esc(mid)}"><svg class="ic" viewBox="0 0 24 24"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg> ردّ</button>
     <button type="button" data-act="fwdPick" data-chat="${esc(chat)}" data-mid="${esc(mid)}" data-mode="fwd">${IC('fwd')} تحويل</button>
     <button type="button" data-act="fwdPick" data-chat="${esc(chat)}" data-mid="${esc(mid)}" data-mode="dir">${IC('pen')} توجيه (تحويل مع كتابة توجيه)</button>
     ${m.text ? `<button type="button" data-act="copyMsg" data-chat="${esc(chat)}" data-mid="${esc(mid)}">${IC('copy')} نسخ النص</button>` : ''}
@@ -1945,7 +2119,7 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => {
   const inp = e.target;
   if (inp.id === 'pkind') { const t = $('#ptitle'); if (t && /^(موقف|كتاب|ملاحظة)/.test(t.value) || t && !t.value) t.value = inp.value === 'report' ? t.defaultValue : ''; return; }
-  if (inp.id === 'utype') { $('#secBox').style.display = inp.value === 'morning' ? '' : 'none'; $('#grpBox').style.display = inp.value === 'shift' ? '' : 'none'; return; } if (inp.dataset && inp.dataset.attach) { const f = inp.files && inp.files[0]; if (f) { if (f.size > MAX_FILE) toast('الحد الأقصى 15 ميغابايت'); else { S.att[inp.dataset.attach] = f; render(); } } inp.value = ''; }
+  if (inp.id === 'utype') { $('#secBox').style.display = inp.value === 'morning' ? '' : 'none'; $('#grpBox').style.display = inp.value === 'shift' ? '' : 'none'; return; } if (inp.dataset && inp.dataset.attach) { const f = inp.files && inp.files[0]; if (f) { if (f.size > MAX_FILE) toast('الحد الأقصى 15 ميغابايت'); else if (/^image\//.test(f.type) && inp.dataset.attach.startsWith('chat:')) openImageEditor(f, inp.dataset.attach); else { S.att[inp.dataset.attach] = f; render(); } } inp.value = ''; }
 });
 document.addEventListener('input', e => {
   if (e.target.id === 'dmq') { const q = e.target.value.trim(); $$('#modal .it').forEach(it => { it.style.display = it.textContent.includes(q) ? '' : 'none'; }); }

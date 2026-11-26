@@ -34,6 +34,18 @@ if "<queries>" in mf and "android.intent.action.VIEW" not in mf.split("<queries>
     mf = mf.replace("<queries>", '<queries>\n        <intent><action android:name="android.intent.action.VIEW"/><data android:scheme="https"/></intent>', 1)
 elif "<queries>" not in mf:
     mf = mf.replace("</manifest>", '    <queries>\n        <intent><action android:name="android.intent.action.VIEW"/><data android:scheme="https"/></intent>\n    </queries>\n</manifest>', 1)
+# مزوّد الملفات المطلوب لالتقاط صورة بالكاميرا من داخل التطبيق (رفع الملفات في WebView)
+if "InAppWebViewFileProvider" not in mf:
+    mf = mf.replace("</application>", """        <provider
+            android:name="com.pichillilorenzo.flutter_inappwebview_android.InAppWebViewFileProvider"
+            android:authorities="${applicationId}.flutter_inappwebview_android.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
+    </application>""", 1)
 open(mf_path, "w", encoding="utf-8").write(mf)
 print("manifest patched")
 
