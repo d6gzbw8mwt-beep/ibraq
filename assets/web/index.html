@@ -145,8 +145,8 @@ header.top .sub{font-size:12.5px;opacity:.85;margin-top:1px}
 .hlogo img{width:32px;height:32px}
 .hav{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;display:grid;place-items:center;font-weight:700;flex:none;font-size:15px}
 .hav svg.ic{width:22px;height:22px}
-main.enter{animation:enter .22s ease-out}
-@keyframes enter{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+main.enter{animation:enter .16s cubic-bezier(.2,.8,.2,1)}
+@keyframes enter{from{opacity:.55;transform:translate3d(-12px,0,0)}to{opacity:1;transform:none}}
 nav.bot{background:#fff;border-top:0;box-shadow:0 -1px 0 var(--bd)}
 nav.bot button{padding:7px 2px 8px;font-size:12px;gap:3px;color:#54656f}
 nav.bot button .i{display:grid;place-items:center;width:58px;height:30px;border-radius:16px;transition:background .2s}
@@ -539,7 +539,7 @@ let B = null;
 const S = {
   ready: false, usersLoaded: false, me: null,
   users: [], settings: {}, tasks: [], posts: [], requests: [], notifs: [], reports: [], empdocs: [], locations: [], chats: [], attendance: [],
-  view: 'home', params: {}, att: {}, reply: {}, msgs: {}, comments: {}, subs: [], installEvt: null
+  view: 'home', params: {}, att: {}, reply: {}, msgs: {}, msgLim: {}, comments: {}, subs: [], installEvt: null
 };
 const user = id => S.users.find(u => u.id === id);
 const uname = id => (user(id) || {}).name || 'مستخدم';
@@ -649,7 +649,12 @@ async function uploadAtt(file) {
 const fileCache = new Map();
 async function fileURL(id) {
   if (fileCache.has(id)) return fileCache.get(id);
-  const p = (async () => { const f = await B.getFile(id); if (!f) throw new Error('الملف غير موجود'); return {url: URL.createObjectURL(f.blob), name: f.name, type: f.type}; })();
+  const p = (async () => {
+    let f = null;
+    if (B.mode === 'cloud') { try { f = await idbGet('fc_' + id); } catch (e) {} }
+    if (!f) { f = await B.getFile(id); if (f && B.mode === 'cloud') idbPut('fc_' + id, {blob: f.blob, name: f.name, type: f.type}).catch(() => {}); }
+    if (!f) throw new Error('الملف غير موجود'); return {url: URL.createObjectURL(f.blob), name: f.name, type: f.type};
+  })();
   fileCache.set(id, p); p.catch(() => fileCache.delete(id)); return p;
 }
 function attHTML(o) {
@@ -739,14 +744,40 @@ window.__nativeBack = () => {
   if (S.view !== 'home') { go('home'); return true; }
   return false;
 };
+/* السياج الجغرافي: تسجيل دخول/خروج الموظف من موقع الدائرة */
+const site = () => { const x = S.settings.site; return x && x.lat != null && x.lng != null ? {lat: +x.lat, lng: +x.lng, r: +(x.r || 150)} : null; };
+function distM(a, b) { const R = 6371000, toR = d => d * Math.PI / 180; const dLa = toR(b.lat - a.lat), dLo = toR(b.lng - a.lng); const h = Math.sin(dLa / 2) ** 2 + Math.cos(toR(a.lat)) * Math.cos(toR(b.lat)) * Math.sin(dLo / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); }
+const fenceUser = u => !!u && !isMgr(u) && !isDirector(u);
+const Fence = {
+  busy: false,
+  async check(pos) {
+    const st = site(); const me = S.me; if (!st || !fenceUser(me) || this.busy || pos.acc > 250) return;
+    const d = distM(pos, st); const key = 'ibraq_fence_' + me.id; const was = ls.get(key, null);
+    let inside = was;
+    if (d <= st.r) inside = true; else if (d > st.r + Math.max(40, pos.acc || 0)) inside = false;
+    if (inside === was || inside === null) return;
+    ls.set(key, inside);
+    if (was === null && !inside) return; // أول قراءة وهو خارج الموقع: لا داعي للتنبيه
+    this.busy = true;
+    try {
+      const t = fmtTime(now());
+      await B.add('attendance', {userId: me.id, type: inside ? 'arrive' : 'leave', geo: true, dist: Math.round(d), lat: pos.lat, lng: pos.lng, ts: now()});
+      await notify('role:manager', inside ? `✅ ${me.name} دخل موقع الدائرة الساعة ${t}` : `🚪 ${me.name} غادر موقع الدائرة الساعة ${t}`, {silentToast: false});
+      toast(inside ? '✅ تم تسجيل دخولك لموقع الدائرة' : 'تم تسجيل خروجك من موقع الدائرة');
+    } catch (e) { console.error(e); } finally { this.busy = false; }
+  },
+  sync() { // يشغّل التتبع خارج وقت الدوام فقط لمعرفة الدخول للموقع
+    if (site() && fenceUser(S.me)) Geo.start(true);
+  }
+};
 window.__nativePos = (lat, lng, acc) => Geo.onPos({coords: {latitude: lat, longitude: lng, accuracy: acc}});
 const blobToB64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
 
 /* ---------------- الموقع الجغرافي ---------------- */
 const Geo = {
   watchId: null, last: null, lastSent: 0, status: '', nativeOn: false,
-  start() {
-    if (Native.ok) { if (this.nativeOn) return; this.nativeOn = true; this.status = 'التتبع يعمل بالخلفية'; Native.call('startTracking', {title: APP, text: 'مشاركة موقعك أثناء الدوام'}).catch(() => {}); return; }
+  start(fenceOnly) {
+    if (Native.ok) { if (this.nativeOn) return; this.nativeOn = true; this.status = 'التتبع يعمل بالخلفية'; Native.call('startTracking', {title: APP, text: fenceOnly ? 'التحقق من وصولك لموقع الدائرة' : 'مشاركة موقعك أثناء الدوام'}).catch(() => {}); return; }
     if (!navigator.geolocation) { this.status = 'الجهاز لا يدعم تحديد الموقع'; render(); return; }
     if (this.watchId != null) return;
     this.status = 'جارِ تحديد الموقع…';
@@ -758,6 +789,8 @@ const Geo = {
     this.last = {lat: +c.latitude.toFixed(6), lng: +c.longitude.toFixed(6), acc: Math.round(c.accuracy), ts: now()};
     this.status = 'الموقع يُرسل مباشرة ✓';
     if (!S.me) return;
+    Fence.check(this.last);
+    if (!onDuty()) return; // خارج الدوام: يُستخدم الموقع فقط لمعرفة الدخول للدائرة ولا يُرسل
     if (first || now() - this.lastSent > 45000) {
       this.lastSent = now();
       try { await B.set('locations', S.me.id, {...this.last, userId: S.me.id, onDuty: true}); } catch (e) {}
@@ -784,11 +817,12 @@ async function autoDuty() {
       ls.set('dawam_duty_' + me.id, true); Geo.start();
       await B.add('attendance', {userId: me.id, type: 'in', auto: true, ts: now()}); render();
     } else if (!should && cur) {
-      ls.set('dawam_duty_' + me.id, false); Geo.stop();
+      ls.set('dawam_duty_' + me.id, false); Geo.stop(); Fence.sync();
       await B.add('attendance', {userId: me.id, type: 'out', auto: true, ts: now()});
       try { await B.merge('locations', me.id, {onDuty: false, ts: now(), userId: me.id}); } catch (e) {}
       render();
     } else if (should && cur && Geo.watchId == null && !Geo.nativeOn) Geo.start();
+    else if (!should && Geo.watchId == null && !Geo.nativeOn) Fence.sync();
   } finally { dutyBusy = false; }
 }
 setInterval(autoDuty, 60000);
@@ -1057,8 +1091,9 @@ function doRender() {
     <main id="main" class="${v.chat ? 'chatmain' : ''}">${v.html}</main>
     ${v.chat ? '' : navHTML()}${v.fab || ''}`;
   document.body.classList.toggle('chatmode', !!v.chat); setVVH();
-  if (app.dataset.shell !== '1') { app.innerHTML = html; app.dataset.shell = '1'; } else morph(app, html);
-  if (wasFresh) { const mn = $('#main'); if (mn) { mn.classList.remove('enter'); void mn.offsetWidth; mn.classList.add('enter'); } }
+  if (app.dataset.shell !== '1' || wasFresh) { app.innerHTML = html; app.dataset.shell = '1'; } else morph(app, html);
+  if (wasFresh && !TAB_ROOTS.includes(S.view) || S.navAnim) { const mn = $('#main'); if (mn) mn.classList.add('enter'); }
+  S.navAnim = false;
   Object.entries(keep).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); try { if (selS != null) el.setSelectionRange(selS, selS); } catch (e) {} } }
   const m = $('#msgs'); if (m) { if (wasFresh || nearBottom || scrollMsgs == null) m.scrollTop = m.scrollHeight; else m.scrollTop = scrollMsgs; }
@@ -1086,8 +1121,9 @@ function myChats() {
   S.chats.filter(c => c.id.startsWith('dm_') && (c.members || []).includes(me.id)).forEach(c => { const o = (c.members || []).find(m => m !== me.id); list.push({id: c.id, name: uname(o), other: o, lastTs: c.lastTs || 0, lastText: c.lastText || '', lastBy: c.lastBy}); });
   return list.sort((a, b) => b.lastTs - a.lastTs);
 }
-const readMap = () => ls.get('dawam_read_' + S.me.id, {});
-function markRead(id) { const m = readMap(); m[id] = now(); ls.set('dawam_read_' + S.me.id, m); }
+let _rm = null, _rmU = null;
+const readMap = () => { if (!_rm || _rmU !== S.me.id) { _rm = ls.get('dawam_read_' + S.me.id, {}); _rmU = S.me.id; } return _rm; };
+function markRead(id) { const m = readMap(); const c = S.chats.find(x => x.id === id); if (m[id] && (!c || !c.lastTs || m[id] >= c.lastTs)) return; m[id] = now(); ls.set('dawam_read_' + S.me.id, m); }
 const isUnread = c => c.lastTs && c.lastBy !== S.me.id && (readMap()[c.id] || 0) < c.lastTs;
 const unreadCount = () => myChats().filter(isUnread).length;
 function chatAccess(id) { if (!S.me) return false; if (id.startsWith('g')) return groupAccess(S.me, +id.slice(1)); return id.slice(3).split('__').includes(S.me.id); }
@@ -1378,7 +1414,8 @@ function watchComments(id) {
 const msgSubs = {};
 function watchMsgs(id) {
   if (msgSubs[id]) return;
-  msgSubs[id] = B.watch('messages', list => { const prev = S.msgs[id]; S.msgs[id] = list; if (S.view === 'chat' && S.params.id === id) { if (prev && list.length > prev.length && list.some(m => m.by !== (S.me && S.me.id) && !prev.some(p => p.id === m.id))) Snd.play('recv'); markRead(id); render(); } }, ['chatId', id]);
+  let lastJ = '';
+  msgSubs[id] = B.watch('messages', list => { const j = JSON.stringify(list); if (j === lastJ) return; lastJ = j; const prev = S.msgs[id]; S.msgs[id] = list; if (S.view === 'chat' && S.params.id === id) { if (prev && list.length > prev.length && list.some(m => m.by !== (S.me && S.me.id) && !prev.some(p => p.id === m.id))) Snd.play('recv'); markRead(id); render(); } }, ['chatId', id]);
   S.subs.push(msgSubs[id]);
 }
 
@@ -1400,7 +1437,8 @@ VIEWS.chat = () => {
   watchMsgs(id); markRead(id);
   const isG = id.startsWith('g'); const g = isG ? +id.slice(1) : 0;
   const other = isG ? null : id.slice(3).split('__').find(m => m !== me.id);
-  const msgs = (S.msgs[id] || []).slice().sort((a, b) => a.ts - b.ts);
+  const allMsgs = (S.msgs[id] || []).slice().sort((a, b) => a.ts - b.ts);
+  const lim = S.msgLim[id] || 60; const msgs = allMsgs.length > lim ? allMsgs.slice(-lim) : allMsgs;
   const target = 'chat:' + id; let lastDay = '';
   const body = msgs.map(m => {
     const d = ymd(new Date(m.ts)); const sep = d !== lastDay ? `<div class="daysep"><span>${fmtDate(d)}</span></div>` : ''; lastDay = d;
@@ -1418,7 +1456,7 @@ VIEWS.chat = () => {
     avatar: `<div class="hav" data-act="chatInfo" data-id="${esc(id)}">${isG ? IC('groups') : esc(initials(uname(other)))}</div>`,
     titleAct: `data-act="chatInfo" data-id="${esc(id)}"`,
     actions: `<button class="ib" data-act="chatMenu" data-id="${esc(id)}"><svg class="ic" viewBox="0 0 24 24"><path d="M12 8a2 2 0 1 0-2-2 2 2 0 0 0 2 2zm0 2a2 2 0 1 0 2 2 2 2 0 0 0-2-2zm0 6a2 2 0 1 0 2 2 2 2 0 0 0-2-2z"/></svg></button>`,
-    html: `<div class="msgs ${wallClass()}" id="msgs" style="${wallStyle()}">${body || '<div class="empty">ابدأ المحادثة…</div>'}</div>
+    html: `<div class="msgs ${wallClass()}" id="msgs" style="${wallStyle()}">${allMsgs.length > msgs.length ? `<div style="text-align:center;margin:6px 0 10px"><button class="chip" data-act="moreMsgs" data-id="${esc(id)}">عرض الرسائل الأقدم (${allMsgs.length - msgs.length})</button></div>` : ''}${body || '<div class="empty">ابدأ المحادثة…</div>'}</div>
       ${attChip(target)}
       ${replyBar(id)}
       <div class="composer ${Rec.mr ? 'recording' : ''}" id="composer">
@@ -1531,6 +1569,15 @@ function loadLeaflet() {
   return leafletP;
 }
 let mapObj = null;
+function insideNow() {
+  const last = {}; S.attendance.filter(a => a.geo).forEach(a => { if (!last[a.userId] || a.ts > last[a.userId].ts) last[a.userId] = a; });
+  return Object.values(last).filter(a => a.type === 'arrive' && now() - a.ts < 24 * 3600000 && user(a.userId)).sort((a, b) => b.ts - a.ts);
+}
+function insideNowHTML() {
+  if (!site()) return isMgr(S.me) ? `<div class="notice info" data-act="go" data-v="settings" style="cursor:pointer">📍 حدد موقع الدائرة من الإعدادات حتى يتسجل دخول الموظفين تلقائياً.</div>` : '';
+  const xs = insideNow();
+  return `<div class="sec-title">📍 داخل موقع الدائرة الآن (${xs.length})</div><div class="card list" style="padding:4px 12px">${xs.map(a => `<div class="it"><div class="av" style="background:var(--okl);color:var(--ok)">${esc(initials(uname(a.userId)))}</div><div class="grow"><b>${esc(uname(a.userId))}</b><div class="mu sm">دخل الساعة ${fmtTime(a.ts)}</div></div></div>`).join('') || '<div class="empty" style="padding:10px">لا أحد حالياً</div>'}</div>`;
+}
 VIEWS.map = () => {
   const me = S.me; if (!canLoc(me)) return {title: 'غير مسموح', back: true, html: ''};
   const locs = S.locations.filter(l => user(l.userId) && l.lat != null).map(l => ({...l, u: user(l.userId)})).sort((a, b) => (b.onDuty - a.onDuty) || b.ts - a.ts);
@@ -1538,10 +1585,10 @@ VIEWS.map = () => {
   const today = dutyDay();
   const att = S.attendance.filter(a => ymd(new Date(a.ts)) === ymd(new Date()) || ymd(new Date(a.ts)) === today).sort((a, b) => b.ts - a.ts).slice(0, 40);
   return {title: 'مواقع الموظفين', sub: `${live.length} في الدوام الآن`, back: true,
-    html: `<div class="card" style="padding:8px"><div id="map"><div class="empty">جارِ تحميل الخريطة…</div></div></div>
+    html: `${insideNowHTML()}<div class="card" style="padding:8px"><div id="map"><div class="empty">جارِ تحميل الخريطة…</div></div></div>
     <div class="card list" style="padding:4px 12px">${locs.map(l => { const fresh = l.onDuty && now() - l.ts < 15 * 60000; return `<div class="it"><div class="av" style="${fresh ? 'background:var(--okl);color:var(--ok)' : ''}">${esc(initials(l.u.name))}</div><div class="grow"><b>${esc(l.u.name)}</b><div class="mu sm">${esc(roleLabel(l.u))}</div><div class="sm">${fresh ? '🟢 في الدوام' : l.onDuty ? '🟡 لا تحديث منذ ' + ago(l.ts) : '⚪ خارج الدوام'} • آخر موقع ${ago(l.ts)}${l.acc ? ' • دقة ' + l.acc + 'م' : ''}</div></div><a class="btn sec sm" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${+l.lat},${+l.lng}">خرائط</a></div>`; }).join('') || '<div class="empty">لا توجد مواقع بعد — تظهر عند بدء الموظفين للدوام</div>'}</div>
     <div class="sec-title">سجل الحضور اليوم</div>
-    <div class="card"><table class="t"><tr><th>الموظف</th><th>الحركة</th><th>الوقت</th></tr>${att.map(a => `<tr><td>${esc(uname(a.userId))}</td><td>${a.type === 'in' ? '<span class="tag done">حضور</span>' : '<span class="tag off">انصراف</span>'}</td><td>${fmtDT(a.ts)}</td></tr>`).join('') || '<tr><td colspan="3" class="mu">لا يوجد</td></tr>'}</table></div>`,
+    <div class="card"><table class="t"><tr><th>الموظف</th><th>الحركة</th><th>الوقت</th></tr>${att.map(a => `<tr><td>${esc(uname(a.userId))}</td><td>${a.type === 'arrive' ? '<span class="tag done">📍 دخل الدائرة</span>' : a.type === 'leave' ? '<span class="tag urgent">🚪 غادر الدائرة</span>' : a.type === 'in' ? '<span class="tag done">بدء الدوام</span>' : '<span class="tag off">انتهاء الدوام</span>'}</td><td>${fmtDT(a.ts)}</td></tr>`).join('') || '<tr><td colspan="3" class="mu">لا يوجد</td></tr>'}</table></div>`,
     after() {
       loadLeaflet().then(() => {
         const el = $('#map'); if (!el || !window.L) return;
@@ -1550,6 +1597,7 @@ VIEWS.map = () => {
         mapObj = L.map(el); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OpenStreetMap'}).addTo(mapObj);
         const pts = [];
         locs.forEach(l => { const fresh = l.onDuty && now() - l.ts < 15 * 60000; const mk = L.circleMarker([l.lat, l.lng], {radius: 9, color: '#fff', weight: 2, fillColor: fresh ? '#2e8b57' : '#999', fillOpacity: .95}).addTo(mapObj); const p = document.createElement('div'); p.textContent = l.u.name + ' — ' + ago(l.ts); mk.bindPopup(p); mk.bindTooltip(l.u.name, {permanent: fresh, direction: 'top'}); pts.push([l.lat, l.lng]); });
+        const st = site(); if (st) { L.circle([st.lat, st.lng], {radius: st.r, color: '#0c5a32', weight: 2, fillColor: '#2e8b57', fillOpacity: .12}).addTo(mapObj).bindTooltip('موقع الدائرة'); pts.push([st.lat, st.lng]); }
         if (pts.length) mapObj.fitBounds(pts, {padding: [30, 30], maxZoom: 16}); else mapObj.setView([33.3152, 44.3661], 11);
       }).catch(() => { const el = $('#map'); if (el) el.innerHTML = '<div class="empty">تعذر تحميل الخريطة هنا — استخدم زر «خرائط» بجانب كل موظف.</div>'; });
     }};
@@ -1608,7 +1656,12 @@ VIEWS.settings = () => {
   const st = S.settings; if (!isMgr(S.me)) return {title: 'غير مسموح', back: true, html: ''};
   const extra = st.extraSections || {};
   return {title: 'الإعدادات', back: true,
-    html: `<div class="card"><h3>دورة المناوبة</h3><p class="mu sm">كل وجبة تداوم 24 ساعة وتستريح 72 ساعة، فتتناوب الوجبات الأربع بالترتيب.</p>
+    html: `<div class="card"><h3>📍 موقع الدائرة</h3><p class="mu sm">لما يدخل الموظف هذي المنطقة بالـGPS يتسجل دخوله ويوصلك إشعار، ولما يطلع منها يتسجل خروجه.</p>
+      <button class="btn sec full" data-act="siteHere">📍 استخدم موقعي الحالي (وأنا داخل الدائرة)</button>
+      <div class="row" style="gap:8px"><div class="grow"><label class="f">خط العرض</label><input class="in" id="siteLat" dir="ltr" inputmode="decimal" value="${esc(st.site && st.site.lat != null ? st.site.lat : '')}"></div><div class="grow"><label class="f">خط الطول</label><input class="in" id="siteLng" dir="ltr" inputmode="decimal" value="${esc(st.site && st.site.lng != null ? st.site.lng : '')}"></div></div>
+      <label class="f">نصف قطر المنطقة</label><select class="in" id="siteR">${[50, 100, 150, 200, 300, 500, 1000].map(r => `<option value="${r}" ${+((st.site && st.site.r) || 150) === r ? 'selected' : ''}>${r} متر</option>`).join('')}</select>
+      <div class="row" style="gap:8px;margin-top:14px"><button class="btn grow" data-act="saveSite">حفظ الموقع</button>${st.site ? '<button class="btn gh" style="color:var(--bad)" data-act="clearSite">إلغاء</button>' : ''}</div></div>
+    <div class="card"><h3>دورة المناوبة</h3><p class="mu sm">كل وجبة تداوم 24 ساعة وتستريح 72 ساعة، فتتناوب الوجبات الأربع بالترتيب.</p>
       <label class="f">تاريخ مرجعي</label><input class="in" type="date" id="rotStart" value="${esc(st.rotStart || ymd(new Date()))}">
       <label class="f">الوجبة المناوبة في هذا التاريخ</label><select class="in" id="rotGroup">${GROUPS.map(g => `<option value="${g}" ${+st.rotGroup === g ? 'selected' : ''}>${gName(g)}</option>`).join('')}</select>
       <label class="f">ساعة تبديل الوجبة</label><select class="in" id="shiftHour">${[...Array(24).keys()].map(h => `<option value="${h}" ${+(st.shiftHour ?? 8) === h ? 'selected' : ''}>${pad(h)}:00</option>`).join('')}</select>
@@ -1862,7 +1915,8 @@ function replyBar(chat) {
 }
 A.replyMsg = d => { closeModal(); S.reply[d.chat] = d.mid; render(); setTimeout(() => { const t = $('#mtext'); if (t) t.focus(); }, 60); };
 A.cancelReply = d => { delete S.reply[d.chat]; render(); };
-A.jumpTo = d => { const el = $(`.msg[data-mid="${CSS.escape(d.mid)}"]`); if (!el) return toast('الرسالة الأصلية غير ظاهرة'); el.scrollIntoView({block: 'center', behavior: 'smooth'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); };
+A.moreMsgs = d => { const m = $('#msgs'); const h0 = m ? m.scrollHeight - m.scrollTop : 0; S.msgLim[d.id] = (S.msgLim[d.id] || 60) + 100; doRender(); const m2 = $('#msgs'); if (m2) m2.scrollTop = m2.scrollHeight - h0; };
+A.jumpTo = d => { let el = $(`.msg[data-mid="${CSS.escape(d.mid)}"]`); if (!el && S.params.id) { S.msgLim[S.params.id] = 1e6; doRender(); el = $(`.msg[data-mid="${CSS.escape(d.mid)}"]`); } if (!el) return toast('الرسالة الأصلية غير ظاهرة'); el.scrollIntoView({block: 'center', behavior: 'smooth'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); };
 /* ---------- خلفية المحادثة ---------- */
 const WALLS = [['def', '#efeae2', 'pat'], ['w1', '#d9e9dc', 'pat'], ['w2', '#cfe3ef', ''], ['w3', '#f3e6cf', ''], ['w4', '#e8dff1', ''], ['w5', '#ffffff', ''], ['w6', '#0b141a', ''], ['w7', '#123c2a', 'pat']];
 const wallPref = () => ls.get('ibraq_wall', {k: 'def'});
@@ -2134,6 +2188,17 @@ A.toggleUser = async d => {
   if (!(await ask(close ? `غلق حساب ${u.name}؟ لن يتمكن من الدخول.` : `إعادة فتح حساب ${u.name}؟`))) return;
   await B.update('users', u.id, {active: !close}); closeModal(); toast(close ? 'تم غلق الحساب' : 'تم فتح الحساب');
 };
+A.siteHere = () => {
+  if (!navigator.geolocation) return toast('الجهاز لا يدعم تحديد الموقع');
+  toast('جارِ تحديد موقعك…');
+  navigator.geolocation.getCurrentPosition(p => { $('#siteLat').value = p.coords.latitude.toFixed(6); $('#siteLng').value = p.coords.longitude.toFixed(6); toast(`تم تحديد الموقع (دقة ${Math.round(p.coords.accuracy)} م) — اضغط «حفظ الموقع»`); }, e => toast('تعذر تحديد الموقع: ' + e.message), {enableHighAccuracy: true, timeout: 20000, maximumAge: 0});
+};
+A.saveSite = async () => {
+  const lat = parseFloat($('#siteLat').value), lng = parseFloat($('#siteLng').value), r = +$('#siteR').value;
+  if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return toast('أدخل موقعاً صحيحاً أو اضغط «استخدم موقعي الحالي»');
+  await B.merge('settings', 'main', {site: {lat, lng, r}}); toast('تم حفظ موقع الدائرة ✓');
+};
+A.clearSite = async () => { if (!(await ask('إلغاء تتبع الدخول لموقع الدائرة؟'))) return; await B.merge('settings', 'main', {site: null}); };
 A.saveSettings = async () => {
   await B.merge('settings', 'main', {rotStart: $('#rotStart').value, rotGroup: +$('#rotGroup').value, shiftHour: +$('#shiftHour').value}); toast('تم الحفظ');
 };
@@ -2294,14 +2359,18 @@ let notifSeen = 0, chatSeen = {};
 function login(u) {
   S.me = u; stopUserSubs(); S.view = 'home'; S.params = {}; S.fresh = true;
   notifSeen = ls.get('dawam_nseen_' + u.id, now()); let firstChats = true;
-  const w = (col, key, extra) => userSubs.push(B.watch(col, list => { S[key] = list; if (extra) extra(list); render(); }));
+  const sig = {};
+  const w = (col, key, extra, views) => userSubs.push(B.watch(col, list => {
+    const j = JSON.stringify(list); if (sig[key] === j) return; sig[key] = j;
+    S[key] = list; if (extra) extra(list); if (!views || views.includes(S.view)) render();
+  }));
   w('tasks', 'tasks'); w('posts', 'posts'); w('requests', 'requests'); w('reports', 'reports'); w('empdocs', 'empdocs');
-  if (canLoc(u)) { w('locations', 'locations'); w('attendance', 'attendance'); }
+  if (canLoc(u)) { w('locations', 'locations', null, ['map']); w('attendance', 'attendance', null, ['map']); }
   w('notifs', 'notifs', list => {
     const fresh = list.filter(n => n.ts > notifSeen && n.by !== S.me.id && notifFor(n, S.me)).sort((a, b) => a.ts - b.ts);
     fresh.forEach(n => { if (!n.silentToast || !(S.view === 'chat' && n.link === 'chat:' + S.params.id)) { toast('🔔 ' + n.text, {urgent: n.urgent, ms: n.urgent ? 9000 : 5000, onClick: () => openLink(n.link)}); sysNotify(n.urgent ? '⚠️ تنبيه عاجل' : APP, n.text); } });
     if (fresh.length) { notifSeen = Math.max(...fresh.map(n => n.ts)); ls.set('dawam_nseen_' + S.me.id, notifSeen); }
-  });
+  }, ['home']);
   w('chats', 'chats', list => {
     list.forEach(c => {
       const prev = chatSeen[c.id] || 0; chatSeen[c.id] = c.lastTs || 0;
@@ -2312,8 +2381,9 @@ function login(u) {
     });
     firstChats = false;
   });
+  setTimeout(() => { if (S.me !== u) return; myChats().filter(c => c.lastTs && now() - c.lastTs < 14 * 864e5).sort((a, b) => b.lastTs - a.lastTs).slice(0, 6).forEach(c => { try { watchMsgs(c.id); } catch (e) {} }); }, 2500);
   navStack.length = 0;
-  if (onDuty() && shouldBeOnDuty(u)) Geo.start();
+  if (onDuty() && shouldBeOnDuty(u)) Geo.start(); else setTimeout(() => { if (S.me === u) Fence.sync(); }, 1500);
   autoDuty();
   render();
 }
