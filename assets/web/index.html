@@ -61,6 +61,7 @@ nav.bot button.on{color:var(--p);font-weight:700}
 .cd.today .dn{background:var(--bad,#e53935);color:#fff}.cd.sel{background:var(--pl,#e6f2ea)}.cd.mine{box-shadow:inset 0 0 0 1.5px var(--a)}
 .cd .gb{font-size:9.5px;color:#fff;border-radius:6px;padding:1px 4px;white-space:nowrap}.cd .tdot{position:absolute;top:4px;left:5px;width:6px;height:6px;border-radius:50%;background:var(--a)}
 .lg{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:4px;vertical-align:middle}
+.sres{padding:10px 12px;cursor:pointer}.sres mark{background:#ffe58a;color:inherit;border-radius:3px;padding:0 1px}
 .tag.urgent{background:var(--badl);color:var(--bad)} .tag.directive{background:var(--al);color:var(--warn)}
 .tag.circular{background:#ede7f6;color:#5e35b1} .tag.done{background:var(--okl);color:var(--ok)}
 .tag.pend{background:#fff4d6;color:#8a6100} .tag.off{background:#eee;color:#777}
@@ -1107,7 +1108,7 @@ function navHTML() {
   const tabs = [['home', IC('home'), 'الرئيسية']];
   if (me.type === 'shift') tabs.push(['mygroup', IC('groups'), 'وجبتي']); else tabs.push(['groups', IC('groups'), 'الوجبات']);
   tabs.push(['chats', IC('chat'), 'الرسائل'], ['requests', IC('req'), 'الطلبات'], ['more', IC('menu'), 'المزيد']);
-  const rootOf = {group: me.type === 'shift' ? 'mygroup' : 'groups', task: me.type === 'shift' ? 'mygroup' : 'groups', post: me.type === 'shift' ? 'mygroup' : 'groups', chat: 'chats', docs: 'more', reports: 'more', map: 'more', users: 'more', settings: 'more', profile: 'more', roster: 'more'};
+  const rootOf = {group: me.type === 'shift' ? 'mygroup' : 'groups', task: me.type === 'shift' ? 'mygroup' : 'groups', post: me.type === 'shift' ? 'mygroup' : 'groups', chat: 'chats', search: 'chats', docs: 'more', reports: 'more', map: 'more', users: 'more', settings: 'more', profile: 'more', roster: 'more'};
   const cur = rootOf[S.view] || S.view;
   const unread = unreadCount(); const pend = S.requests.filter(r => canDecide(me, r)).length;
   return `<nav class="bot"><div class="in">${tabs.map(([k, i, l]) => `<button class="${cur === k ? 'on' : ''}" data-act="tab" data-v="${k}"><span class="i">${i}</span>${l}${k === 'chats' && unread ? `<span class="dot">${unread}</span>` : ''}${k === 'requests' && pend ? `<span class="dot">${pend}</span>` : ''}</button>`).join('')}</div></nav>`;
@@ -1423,12 +1424,104 @@ VIEWS.chats = () => {
   const list = myChats();
   return {
     title: 'الرسائل', sub: 'محادثات الوجبات والمراسلة بين الموظفين',
+    actions: isMgr(S.me) ? `<button class="ib" data-act="go" data-v="search" title="بحث ذكي بالرسائل"><svg class="ic" viewBox="0 0 24 24"><path d="M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 9.5 16a6.5 6.5 0 0 0 4.2-1.6l.3.3v.8l5 5 1.5-1.5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg></button>` : '',
     html: `<div class="clist">${list.map(c => `<div class="crow ${isUnread(c) ? 'unread' : ''}" data-key="${esc(c.id)}" data-act="go" data-v="chat" data-id="${esc(c.id)}">
       <div class="av ${c.group ? 'g' : ''}">${c.group ? IC('groups') : esc(initials(c.name))}</div>
       <div class="bd"><div class="row between" style="gap:8px"><div class="nm">${esc(c.name)}</div><span class="tm">${c.lastTs ? fmtDT(c.lastTs) : ''}</span></div>
       <div class="row between" style="gap:8px;margin-top:2px"><div class="lt">${c.lastText ? (c.lastBy === S.me.id ? 'أنت: ' : c.group && c.lastBy ? esc(uname(c.lastBy)) + ': ' : '') + esc(c.lastText) : 'لا توجد رسائل'}</div>${isUnread(c) ? '<span class="ubadge">●</span>' : ''}</div></div></div>`).join('') || '<div class="empty">لا توجد محادثات</div>'}</div>`,
     fab: `<button class="fab" data-act="newDM">${IC('msg')}</button>`
   };
+};
+
+/* ---------------- البحث الذكي بالرسائل (للمدير فقط) ---------------- */
+const SQ = {all: null, sub: null, q: '', f: 'all', t: null};
+const AR_NORM = [[/[ً-ْٰـ]/g, ''], [/[أإآٱ]/g, 'ا'], [/ى/g, 'ي'], [/ؤ/g, 'و'], [/ئ/g, 'ي'], [/ة/g, 'ه'], [/گ/g, 'ك'], [/[چ]/g, 'ج'], [/[پ]/g, 'ب'], [/[ڤ]/g, 'ف'], [/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)]];
+const normAr = t => { t = String(t || '').toLowerCase(); AR_NORM.forEach(([a, b]) => { t = t.replace(a, b); }); return t; };
+const tokAr = t => normAr(t).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+function stemAr(w) {
+  if (w.length <= 3) return w;
+  for (const p of ['وبال', 'وال', 'بال', 'كال', 'فال', 'لل', 'ال', 'و', 'ب', 'ف', 'ل', 'ك']) if (w.startsWith(p) && w.length - p.length >= 3) { w = w.slice(p.length); break; }
+  for (const x of ['يات', 'ات', 'ون', 'ين', 'ان', 'ها', 'هم', 'هن', 'كم', 'نا', 'تم', 'ه', 'ي', 'ك']) if (w.endsWith(x) && w.length - x.length >= 3) { w = w.slice(0, -x.length); break; }
+  return w;
+}
+// مرادفات ولهجة عراقية شائعة بالعمل
+const SYN = [['هسه', 'هسع', 'الان', 'حاليا', 'هلا'], ['شلون', 'كيف'], ['اكو', 'يوجد', 'موجود'], ['ماكو', 'لايوجد', 'مفقود'], ['شنو', 'ماذا', 'شو'], ['وين', 'اين', 'مكان', 'موقع'], ['ليش', 'لماذا', 'سبب'],
+  ['عطل', 'عطب', 'خلل', 'عاطل', 'خربان', 'خراب', 'متعطل', 'تلف', 'مشكله'], ['مولده', 'مولد', 'جنريتر', 'كهرباء'], ['كتاب', 'مخاطبه', 'رساله', 'مراسله', 'وثيقه'], ['توقيع', 'امضاء', 'ختم'],
+  ['اجازه', 'عطله', 'اذن', 'استراحه', 'زمنيه'], ['دوام', 'مناوبه', 'خفاره', 'وجبه', 'شفت'], ['غياب', 'غائب', 'متغيب', 'منقطع'], ['حضور', 'وصول', 'وصل', 'حاضر'], ['صوره', 'لقطه', 'تصوير'],
+  ['عاجل', 'مستعجل', 'فوري', 'ضروري', 'هام'], ['موافقه', 'مصادقه', 'اقرار', 'قبول'], ['رفض', 'مرفوض', 'عدم'], ['تقرير', 'موقف', 'بيان', 'خلاصه'], ['صيانه', 'تصليح', 'اصلاح', 'تصلیح'],
+  ['خزان', 'تانكي', 'مستودع', 'مخزن'], ['وقود', 'بانزين', 'بنزين', 'كاز', 'نفط', 'زيت', 'منتجات'], ['سياره', 'عجله', 'مركبه', 'تانكر', 'ناقله'], ['مدير', 'المسؤول', 'رئيس', 'مسؤول'], ['اجتماع', 'لقاء', 'جلسه'],
+  ['جرد', 'حصر', 'عد'], ['تعميم', 'توجيه', 'امر', 'تعليمات'], ['فحص', 'كشف', 'تدقيق', 'تفتيش', 'متابعه']].map(g => g.map(w => stemAr(normAr(w))));
+const synOf = w => { const out = new Set(); SYN.forEach(g => { if (g.includes(w)) g.forEach(x => out.add(x)); }); out.delete(w); return [...out]; };
+function editDist(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = [...Array(b.length + 1).keys()];
+  for (let i = 1; i <= a.length; i++) { const cur = [i]; let best = i; for (let j = 1; j <= b.length; j++) { cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); if (cur[j] < best) best = cur[j]; } if (best > max) return max + 1; prev = cur; }
+  return prev[b.length];
+}
+function msgText(m) { return [m.text, m.directive, m.fileName, m.replyTo && m.replyTo.text].filter(Boolean).join(' '); }
+function scoreMsg(qt, m) {
+  if (!m._tk) { const raw = tokAr(msgText(m)); m._tk = raw.map(w => [w, stemAr(w)]); m._nt = normAr(msgText(m)); }
+  let total = 0, hit = 0; const marks = [];
+  for (const q of qt) {
+    let best = 0, bw = null;
+    for (const [w, st] of m._tk) {
+      let sc = 0;
+      if (w === q.w) sc = 3; else if (st === q.st) sc = 2.6;
+      else if (q.syn.includes(st)) sc = 2;
+      else if (q.w.length >= 3 && (w.startsWith(q.w) || w.includes(q.w))) sc = 1.8;
+      else if (q.st.length >= 4) { const d = editDist(st, q.st, q.st.length >= 7 ? 2 : 1); if (d <= (q.st.length >= 7 ? 2 : 1)) sc = 1.4 - d * .2; }
+      if (sc > best) { best = sc; bw = w; }
+    }
+    if (best) { hit++; total += best; marks.push(bw); }
+  }
+  if (!hit) return null;
+  if (hit === qt.length) total += 2 + qt.length; else total *= hit / qt.length;
+  if (qt.length > 1 && m._nt.includes(qt.map(q => q.w).join(' '))) total += 4;
+  return {score: total, marks};
+}
+function smartSearch(q) {
+  const words = tokAr(q).filter(w => w.length > 1 || /\d/.test(w)); if (!words.length) return [];
+  const qt = words.map(w => { const st = stemAr(w); return {w, st, syn: synOf(st)}; });
+  const f = SQ.f; const res = [];
+  for (const m of SQ.all || []) {
+    if (m.type === 'sys' || !chatAccess(m.chatId)) continue;
+    if (f === 'img' && m.type !== 'image') continue; if (f === 'file' && !(m.fileId && m.type !== 'image' && m.type !== 'audio')) continue;
+    if (f === 'dir' && !m.directive) continue; if (f === 'mine' && m.by !== S.me.id) continue;
+    const r = scoreMsg(qt, m); if (r) res.push({m, ...r});
+  }
+  const nowT = now();
+  res.sort((a, b) => (b.score + Math.max(0, 1 - (nowT - b.m.ts) / (90 * 864e5))) - (a.score + Math.max(0, 1 - (nowT - a.m.ts) / (90 * 864e5))));
+  return res.slice(0, 80);
+}
+function hlText(text, marks) {
+  const t = String(text || ''); if (!marks.length) return esc(t.slice(0, 160));
+  const parts = t.split(/(\s+)/); let firstHit = -1;
+  const out = parts.map((w, i) => { const n = normAr(w).replace(/[^\p{L}\p{N}]/gu, ''); if (n && marks.some(mk => n === mk || n.includes(mk) || mk.includes(n) && n.length > 2)) { if (firstHit < 0) firstHit = i; return `<mark>${esc(w)}</mark>`; } return esc(w); });
+  const start = Math.max(0, firstHit - 12); return (start ? '… ' : '') + out.slice(start, start + 60).join('') + (start + 60 < out.length ? ' …' : '');
+}
+function searchResultsHTML() {
+  if (!SQ.all) return '<div class="center" style="min-height:160px"><div class="spin"></div></div>';
+  const q = SQ.q.trim();
+  if (!q) return `<div class="empty">اكتب كلمة أو جملة… البحث يفهم الكلمات المتشابهة، والأخطاء الإملائية البسيطة، والمرادفات (مثل: عطل = خلل = عطب، هسه = الآن).<br><span class="mu sm">${SQ.all.filter(m => m.type !== 'sys' && chatAccess(m.chatId)).length} رسالة متاحة للبحث</span></div>`;
+  const rs = smartSearch(q);
+  if (!rs.length) return '<div class="empty">ما لكيت رسائل مشابهة</div>';
+  const cn = {}; myChats().forEach(c => cn[c.id] = c.name);
+  return `<div class="mu sm" style="margin:2px 4px 8px">${rs.length >= 80 ? 'أفضل 80 نتيجة' : rs.length + ' نتيجة'}</div>` + rs.map(({m, marks}) => {
+    const ic = m.type === 'image' ? '📷 ' : m.type === 'audio' ? '🎤 ' : m.fileId ? '📎 ' : '';
+    return `<div class="card sres" data-act="openHit" data-chat="${esc(m.chatId)}" data-mid="${esc(m.id)}"><div class="row between"><b class="sm" style="color:var(--p)">${esc(cn[m.chatId] || (m.chatId.startsWith('g') ? gName(+m.chatId.slice(1)) : 'محادثة'))}</b><span class="mu sm">${fmtDT(m.ts)}</span></div>
+      <div class="sm mu" style="margin:2px 0">${esc(uname(m.by))}${m.directive ? ' • 📌 توجيه' : ''}${m.fwd ? ' • محوّلة' : ''}</div>
+      <div style="white-space:pre-wrap">${ic}${m.directive ? '<b>التوجيه:</b> ' + hlText(m.directive, marks) + '<br>' : ''}${hlText(m.text || m.fileName || '', marks)}</div></div>`;
+  }).join('');
+}
+VIEWS.search = () => {
+  const me = S.me; if (!isMgr(me)) return {title: 'غير مسموح', back: true, html: ''};
+  if (!SQ.sub) SQ.sub = B.watch('messages', list => { SQ.all = list; const r = $('#sres'); if (r && S.view === 'search') r.innerHTML = searchResultsHTML(); });
+  const chips = [['all', 'الكل'], ['dir', 'التوجيهات'], ['img', 'الصور'], ['file', 'الملفات'], ['mine', 'رسائلي']];
+  return {title: 'بحث ذكي بالرسائل', sub: 'يظهر للمدير فقط', back: true,
+    html: `<div class="card" style="padding:10px;position:sticky;top:0;z-index:3"><input class="in" id="sq" type="search" placeholder="ابحث بالرسائل… مثلاً: عطل المولدة" value="${esc(SQ.q)}" autocomplete="off" enterkeyhint="search">
+      <div class="chips" style="margin:8px 0 0">${chips.map(([k, l]) => `<button class="chip ${SQ.f === k ? 'on' : ''}" data-act="sqf" data-f="${k}">${l}</button>`).join('')}</div></div>
+      <div id="sres">${searchResultsHTML()}</div>`,
+    after() { const i = $('#sq'); if (i && !i._w) { i._w = 1; if (!SQ.q) setTimeout(() => i.focus(), 50); i.addEventListener('input', () => { SQ.q = i.value; clearTimeout(SQ.t); SQ.t = setTimeout(() => { const r = $('#sres'); if (r) r.innerHTML = searchResultsHTML(); }, 120); }); } }};
 };
 
 VIEWS.chat = () => {
@@ -1915,6 +2008,12 @@ function replyBar(chat) {
 }
 A.replyMsg = d => { closeModal(); S.reply[d.chat] = d.mid; render(); setTimeout(() => { const t = $('#mtext'); if (t) t.focus(); }, 60); };
 A.cancelReply = d => { delete S.reply[d.chat]; render(); };
+A.sqf = d => { SQ.f = d.f; $$('[data-act=sqf]').forEach(b => b.classList.toggle('on', b.dataset.f === d.f)); const r = $('#sres'); if (r) r.innerHTML = searchResultsHTML(); };
+A.openHit = d => {
+  const id = d.chat; if (!S.msgs[id] && SQ.all) S.msgs[id] = SQ.all.filter(m => m.chatId === id);
+  S.msgLim[id] = 1e6; go('chat', {id});
+  setTimeout(() => A.jumpTo({mid: d.mid}), 260);
+};
 A.moreMsgs = d => { const m = $('#msgs'); const h0 = m ? m.scrollHeight - m.scrollTop : 0; S.msgLim[d.id] = (S.msgLim[d.id] || 60) + 100; doRender(); const m2 = $('#msgs'); if (m2) m2.scrollTop = m2.scrollHeight - h0; };
 A.jumpTo = d => { let el = $(`.msg[data-mid="${CSS.escape(d.mid)}"]`); if (!el && S.params.id) { S.msgLim[S.params.id] = 1e6; doRender(); el = $(`.msg[data-mid="${CSS.escape(d.mid)}"]`); } if (!el) return toast('الرسالة الأصلية غير ظاهرة'); el.scrollIntoView({block: 'center', behavior: 'smooth'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); };
 /* ---------- خلفية المحادثة ---------- */
@@ -2354,7 +2453,7 @@ document.addEventListener('submit', async e => {
 
 /* ---------------- الاشتراكات المباشرة ---------------- */
 let userSubs = [];
-function stopUserSubs() { userSubs.forEach(u => { try { u(); } catch (e) {} }); userSubs = []; S.subs.forEach(u => { try { u(); } catch (e) {} }); S.subs = []; Object.keys(msgSubs).forEach(k => delete msgSubs[k]); Object.keys(commentSubs).forEach(k => delete commentSubs[k]); }
+function stopUserSubs() { if (SQ.sub) { try { SQ.sub(); } catch (e) {} SQ.sub = null; SQ.all = null; SQ.q = ''; } userSubs.forEach(u => { try { u(); } catch (e) {} }); userSubs = []; S.subs.forEach(u => { try { u(); } catch (e) {} }); S.subs = []; Object.keys(msgSubs).forEach(k => delete msgSubs[k]); Object.keys(commentSubs).forEach(k => delete commentSubs[k]); }
 let notifSeen = 0, chatSeen = {};
 function login(u) {
   S.me = u; stopUserSubs(); S.view = 'home'; S.params = {}; S.fresh = true;
